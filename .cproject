@@ -1,0 +1,89 @@
+<?xml version="1.0" encoding="UTF-8" standalone="no"?>
+<?fileVersion 4.0.0?><cproject storage_type_id="org.eclipse.cdt.core.XmlProjectDescriptionStorage">
+	<storageModule moduleId="org.eclipse.cdt.core.settings">
+		<cconfiguration id="cdt.managedbuild.toolchain.gnu.macosx.base.1045605317">
+			<storageModule buildSystemId="org.eclipse.cdt.managedbuilder.core.configurationDataProvider" id="cdt.managedbuild.toolchain.gnu.macosx.base.1045605317" moduleId="org.eclipse.cdt.core.settings" name="Default">
+				<externalSettings/>
+				<extensions>
+					<extension id="org.eclipse.cdt.core.MachO64" point="org.eclipse.cdt.core.BinaryParser"/>
+					<extension id="org.eclipse.cdt.core.GASErrorParser" point="org.eclipse.cdt.core.ErrorParser"/>
+					<extension id="org.eclipse.cdt.core.GmakeErrorParser" point="org.eclipse.cdt.core.ErrorParser"/>
+					<extension id="org.eclipse.cdt.core.GLDErrorParser" point="org.eclipse.cdt.core.ErrorParser"/>
+					<extension id="org.eclipse.cdt.core.CWDLocator" point="org.eclipse.cdt.core.ErrorParser"/>
+					<extension id="org.eclipse.cdt.core.GCCErrorParser" point="org.eclipse.cdt.core.ErrorParser"/>
+				</extensions>
+			</storageModule>
+			<storageModule moduleId="cdtBuildSystem" version="4.0.0">
+				<configuration buildProperties="" description="" id="cdt.managedbuild.toolchain.gnu.macosx.base.1045605317" name="Default" parent="org.eclipse.cdt.build.core.emptycfg">
+					<folderInfo id="cdt.managedbuild.toolchain.gnu.macosx.base.1045605317.60749167" name="/" resourcePath="">
+						<toolChain id="cdt.managedbuild.toolchain.gnu.macosx.base.1264810815" name="MacOSX GCC" superClass="cdt.managedbuild.toolchain.gnu.macosx.base">
+							<targetPlatform archList="all" binaryParser="org.eclipse.cdt.core.MachO64" id="cdt.managedbuild.target.gnu.platform.macosx.base.1069290827" name="Debug Platform" osList="macosx" superClass="cdt.managedbuild.target.gnu.platform.macosx.base"/>
+							<builder id="cdt.managedbuild.target.gnu.builder.macosx.base.1202716501" keepEnvironmentInBuildfile="false" managedBuildOn="false" name="Gnu Make Builder" superClass="cdt.managedbuild.target.gnu.builder.macosx.base"/>
+							<tool id="cdt.managedbuild.tool.macosx.c.linker.macosx.base.987903130" name="MacOS X C Linker" superClass="cdt.managedbuild.tool.macosx.c.linker.macosx.base"/>
+							<tool id="cdt.managedbuild.tool.macosx.cpp.linker.macosx.base.1831634102" name="MacOS X C++ Linker" superClass="cdt.managedbuild.tool.macosx.cpp.linker.macosx.base">
+								<inputType id="cdt.managedbuild.tool.macosx.cpp.linker.input.2104482914" superClass="cdt.managedbuild.tool.macosx.cpp.linker.input">
+									<additionalInput kind="additionalinputdependency" paths="$(USER_OBJS)"/>
+									<additionalInput kind="additionalinput" paths="$(LIBS)"/>
+								</inputType>
+							</tool>
+							<tool id="cdt.managedbuild.tool.gnu.assembler.macosx.base.709253396" name="GCC Assembler" superClass="cdt.managedbuild.tool.gnu.assembler.macosx.base">
+								<option id="gnu.both.asm.option.include.paths.1068599465" name="Include paths (-I)" superClass="gnu.both.asm.option.include.paths" valueType="includePath">
+									<listOptionValue builtIn="false" value="/Users/aqw/Research/DataTransferKit/libmeshDemo/cdt-includes"/>
+									<listOptionValue builtIn="false" value="/Users/aqw/Research/DataTransferKit/libmeshDemo/cdt-includes/c++/5/backward"/>
+									<listOptionValue builtIn="false" value="/Users/aqw/Research/DataTransferKit/libmeshDemo/cdt-includes/c++/5"/>
+									<listOptionValue builtIn="false" value="/Users/aqw/Research/DataTransferKit/libmeshDemo/cdt-includes/dtk-trilinos"/>
+								</option>
+								<inputType id="cdt.managedbuild.tool.gnu.assembler.input.1785509054" superClass="cdt.managedbuild.tool.gnu.assembler.input"/>
+							</tool>
+							<tool id="cdt.managedbuild.tool.gnu.archiver.macosx.base.556521634" name="GCC Archiver" superClass="cdt.managedbuild.tool.gnu.archiver.macosx.base"/>
+							<tool id="cdt.managedbuild.tool.gnu.cpp.compiler.macosx.base.1420803073" name="GCC C++ Compiler" superClass="cdt.managedbuild.tool.gnu.cpp.compiler.macosx.base">
+								<option id="gnu.cpp.compiler.option.include.paths.596653742" name="Include paths (-I)" superClass="gnu.cpp.compiler.option.include.paths" useByScannerDiscovery="false" valueType="includePath">
+									<listOptionValue builtIn="false" value="/Users/aqw/Research/DataTransferKit/libmeshDemo/cdt-includes"/>
+									<listOptionValue builtIn="false" value="/Users/aqw/Research/DataTransferKit/libmeshDemo/cdt-includes/c++/5/backward"/>
+									<listOptionValue builtIn="false" value="/Users/aqw/Research/DataTransferKit/libmeshDemo/cdt-includes/c++/5"/>
+									<listOptionValue builtIn="false" value="/Users/aqw/Research/DataTransferKit/libmeshDemo/cdt-includes/dtk-trilinos"/>
+								</option>
+								<inputType id="cdt.managedbuild.tool.gnu.cpp.compiler.input.1537403879" superClass="cdt.managedbuild.tool.gnu.cpp.compiler.input"/>
+							</tool>
+							<tool id="cdt.managedbuild.tool.gnu.c.compiler.macosx.base.1937600409" name="GCC C Compiler" superClass="cdt.managedbuild.tool.gnu.c.compiler.macosx.base">
+								<option id="gnu.c.compiler.option.include.paths.1163996144" name="Include paths (-I)" superClass="gnu.c.compiler.option.include.paths" useByScannerDiscovery="false" valueType="includePath">
+									<listOptionValue builtIn="false" value="/Users/aqw/Research/DataTransferKit/libmeshDemo/cdt-includes"/>
+									<listOptionValue builtIn="false" value="/Users/aqw/Research/DataTransferKit/libmeshDemo/cdt-includes/c++/5/backward"/>
+									<listOptionValue builtIn="false" value="/Users/aqw/Research/DataTransferKit/libmeshDemo/cdt-includes/c++/5"/>
+									<listOptionValue builtIn="false" value="/Users/aqw/Research/DataTransferKit/libmeshDemo/cdt-includes/dtk-trilinos"/>
+								</option>
+								<inputType id="cdt.managedbuild.tool.gnu.c.compiler.input.1315165290" superClass="cdt.managedbuild.tool.gnu.c.compiler.input"/>
+							</tool>
+						</toolChain>
+					</folderInfo>
+				</configuration>
+			</storageModule>
+			<storageModule moduleId="org.eclipse.cdt.core.externalSettings"/>
+		</cconfiguration>
+	</storageModule>
+	<storageModule moduleId="cdtBuildSystem" version="4.0.0">
+		<project id="libmesh-dtk3.0.null.1748357427" name="libmesh-dtk3.0"/>
+	</storageModule>
+	<storageModule moduleId="org.eclipse.cdt.core.LanguageSettingsProviders"/>
+	<storageModule moduleId="scannerConfiguration">
+		<autodiscovery enabled="true" problemReportingEnabled="true" selectedProfileId=""/>
+		<scannerConfigBuildInfo instanceId="cdt.managedbuild.config.gnu.exe.release.1203975759;cdt.managedbuild.config.gnu.exe.release.1203975759.;cdt.managedbuild.tool.gnu.cpp.compiler.exe.release.2142828143;cdt.managedbuild.tool.gnu.cpp.compiler.input.1952444278">
+			<autodiscovery enabled="true" problemReportingEnabled="true" selectedProfileId=""/>
+		</scannerConfigBuildInfo>
+		<scannerConfigBuildInfo instanceId="cdt.managedbuild.toolchain.gnu.macosx.base.1045605317;cdt.managedbuild.toolchain.gnu.macosx.base.1045605317.60749167;cdt.managedbuild.tool.gnu.cpp.compiler.macosx.base.1420803073;cdt.managedbuild.tool.gnu.cpp.compiler.input.1537403879">
+			<autodiscovery enabled="true" problemReportingEnabled="true" selectedProfileId=""/>
+		</scannerConfigBuildInfo>
+		<scannerConfigBuildInfo instanceId="cdt.managedbuild.config.gnu.exe.release.1203975759;cdt.managedbuild.config.gnu.exe.release.1203975759.;cdt.managedbuild.tool.gnu.c.compiler.exe.release.1490789180;cdt.managedbuild.tool.gnu.c.compiler.input.1565440356">
+			<autodiscovery enabled="true" problemReportingEnabled="true" selectedProfileId=""/>
+		</scannerConfigBuildInfo>
+		<scannerConfigBuildInfo instanceId="cdt.managedbuild.config.gnu.exe.debug.1548385070;cdt.managedbuild.config.gnu.exe.debug.1548385070.;cdt.managedbuild.tool.gnu.cpp.compiler.exe.debug.1669702796;cdt.managedbuild.tool.gnu.cpp.compiler.input.460836829">
+			<autodiscovery enabled="true" problemReportingEnabled="true" selectedProfileId=""/>
+		</scannerConfigBuildInfo>
+		<scannerConfigBuildInfo instanceId="cdt.managedbuild.toolchain.gnu.macosx.base.1045605317;cdt.managedbuild.toolchain.gnu.macosx.base.1045605317.60749167;cdt.managedbuild.tool.gnu.c.compiler.macosx.base.1937600409;cdt.managedbuild.tool.gnu.c.compiler.input.1315165290">
+			<autodiscovery enabled="true" problemReportingEnabled="true" selectedProfileId=""/>
+		</scannerConfigBuildInfo>
+		<scannerConfigBuildInfo instanceId="cdt.managedbuild.config.gnu.exe.debug.1548385070;cdt.managedbuild.config.gnu.exe.debug.1548385070.;cdt.managedbuild.tool.gnu.c.compiler.exe.debug.469588987;cdt.managedbuild.tool.gnu.c.compiler.input.612323796">
+			<autodiscovery enabled="true" problemReportingEnabled="true" selectedProfileId=""/>
+		</scannerConfigBuildInfo>
+	</storageModule>
+</cproject>
