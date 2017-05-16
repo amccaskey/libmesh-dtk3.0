@@ -1,11 +1,7 @@
-SET(HEADERS "")
-SET(SOURCES "")
+INCLUDE_DIRECTORIES(${CMAKE_SOURCE_DIR}/src/interface/src/Client)
+INCLUDE_DIRECTORIES(${CMAKE_SOURCE_DIR}/src/interface/src/OperatorVector)
 
-INCLUDE_DIRECTORIES(${CMAKE_CURRENT_BINARY_DIR})
-
-INCLUDE_DIRECTORIES(${CMAKE_CURRENT_SOURCE_DIR})
-
-APPEND_SET(HEADERS
+set(HEADERS
   DTK_LibmeshAdjacencies.hpp
   DTK_LibmeshEntity.hpp
   DTK_LibmeshEntityExtraData.hpp
@@ -21,7 +17,7 @@ APPEND_SET(HEADERS
   DTK_LibmeshVariableField.hpp
   )
 
-APPEND_SET(SOURCES
+set(SOURCES
   DTK_LibmeshAdjacencies.cpp
   DTK_LibmeshEntity.cpp
   DTK_LibmeshEntityImpl.cpp
@@ -33,12 +29,4 @@ APPEND_SET(SOURCES
   DTK_LibmeshVariableField.cpp
   )
 
-#
-# C) Define the targets for package's library(s)
-#
-
-TRIBITS_ADD_LIBRARY(
-  dtk_libmeshadapters
-  HEADERS ${HEADERS}
-  SOURCES ${SOURCES}
-  )
+add_library(dtk_libmeshadapters SHARED ${SOURCES})

@@ -7,12 +7,14 @@ set(CMAKE_STANDARD_REQUIRED ON)
 set(CMAKE_CXX_STANDARD 14)
 message(STATUS "C++ version ${CXX_STANDARD} configured.")
 
-set(CMAKE_MODULE_PATH ${CMAKE_MODULE_PATH} "${CMAKE_SOURCE_DIR}/cmake/Modules")
+find_package(MPI REQUIRED)
 
-find_package(Boost COMPONENTS system program_options REQUIRED)
 message(STATUS "Found Boost Headers = ${Boost_INCLUDE_DIRS}")
 message(STATUS "Found Boost Libraries = ${Boost_LIBRARIES}")
 
+include_directories(${MPI_INCLUDE_PATH})
+include_directories(${DTK_TRILINOS_ROOT}/include)
 include_directories(${Boost_INCLUDE_DIRS})
+include_directories(${Libmesh_INCLUDE_DIRS})
 
 add_subdirectory(src)

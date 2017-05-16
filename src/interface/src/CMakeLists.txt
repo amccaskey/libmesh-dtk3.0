@@ -10,53 +10,45 @@
 SET(HEADERS "")
 SET(SOURCES "")
 
-SET_AND_INC_DIRS(DIR ${CMAKE_CURRENT_SOURCE_DIR}/Client)
-APPEND_SET(HEADERS
-  ${DIR}/DTK_ClientManager.hpp
-  ${DIR}/DTK_Entity.hpp
-  ${DIR}/DTK_EntityExtraData.hpp
-  ${DIR}/DTK_EntityImpl.hpp
-  ${DIR}/DTK_EntityIntegrationRule.hpp
-  ${DIR}/DTK_EntityIterator.hpp
-  ${DIR}/DTK_EntityLocalMap.hpp
-  ${DIR}/DTK_Field.hpp
-  ${DIR}/DTK_EntitySet.hpp
-  ${DIR}/DTK_EntityShapeFunction.hpp
-  ${DIR}/DTK_Types.hpp
+include_directories(${CMAKE_CURRENT_SOURCE_DIR}/Client)
+include_directories(${CMAKE_CURRENT_SOURCE_DIR}/OperatorVector)
+
+set(HEADERS
+  ${CMAKE_CURRENT_SOURCE_DIR}/Client/DTK_ClientManager.hpp
+  ${CMAKE_CURRENT_SOURCE_DIR}/Client/DTK_Entity.hpp
+  ${CMAKE_CURRENT_SOURCE_DIR}/Client/DTK_EntityExtraData.hpp
+  ${CMAKE_CURRENT_SOURCE_DIR}/Client/DTK_EntityImpl.hpp
+  ${CMAKE_CURRENT_SOURCE_DIR}/Client/DTK_EntityIntegrationRule.hpp
+  ${CMAKE_CURRENT_SOURCE_DIR}/Client/DTK_EntityIterator.hpp
+  ${CMAKE_CURRENT_SOURCE_DIR}/Client/DTK_EntityLocalMap.hpp
+  ${CMAKE_CURRENT_SOURCE_DIR}/Client/DTK_Field.hpp
+  ${CMAKE_CURRENT_SOURCE_DIR}/Client/DTK_EntitySet.hpp
+  ${CMAKE_CURRENT_SOURCE_DIR}/Client/DTK_EntityShapeFunction.hpp
+  ${CMAKE_CURRENT_SOURCE_DIR}/Client/DTK_Types.hpp
+  ${CMAKE_CURRENT_SOURCE_DIR}/OperatorVector/DTK_BasicEntityPredicates.hpp
+  ${CMAKE_CURRENT_SOURCE_DIR}/OperatorVector/DTK_FieldMultiVector.hpp
+  ${CMAKE_CURRENT_SOURCE_DIR}/OperatorVector/DTK_FunctionSpace.hpp
+  ${CMAKE_CURRENT_SOURCE_DIR}/OperatorVector/DTK_IntegrationPoint.hpp
+  ${CMAKE_CURRENT_SOURCE_DIR}/OperatorVector/DTK_IntegrationPointSet.hpp
+  ${CMAKE_CURRENT_SOURCE_DIR}/OperatorVector/DTK_MapOperator.hpp
   )
 
-APPEND_SET(SOURCES
-  ${DIR}/DTK_Entity.cpp
-  ${DIR}/DTK_EntityIterator.cpp
-  ${DIR}/DTK_EntityLocalMap.cpp
-  ${DIR}/DTK_EntitySet.cpp
-  ${DIR}/DTK_EntityShapeFunction.cpp
-  )
-
-SET_AND_INC_DIRS(DIR ${CMAKE_CURRENT_SOURCE_DIR}/OperatorVector)
-APPEND_SET(HEADERS
-  ${DIR}/DTK_BasicEntityPredicates.hpp
-  ${DIR}/DTK_FieldMultiVector.hpp
-  ${DIR}/DTK_FunctionSpace.hpp
-  ${DIR}/DTK_IntegrationPoint.hpp
-  ${DIR}/DTK_IntegrationPointSet.hpp
-  ${DIR}/DTK_MapOperator.hpp
-  )
-
-APPEND_SET(SOURCES
-  ${DIR}/DTK_BasicEntityPredicates.cpp
-  ${DIR}/DTK_FieldMultiVector.cpp
-  ${DIR}/DTK_FunctionSpace.cpp
-  ${DIR}/DTK_IntegrationPointSet.cpp
-  ${DIR}/DTK_MapOperator.cpp
+set(SOURCES
+  ${CMAKE_CURRENT_SOURCE_DIR}/Client/DTK_Entity.cpp
+  ${CMAKE_CURRENT_SOURCE_DIR}/Client/DTK_EntityIterator.cpp
+  ${CMAKE_CURRENT_SOURCE_DIR}/Client/DTK_EntityLocalMap.cpp
+  ${CMAKE_CURRENT_SOURCE_DIR}/Client/DTK_EntitySet.cpp
+  ${CMAKE_CURRENT_SOURCE_DIR}/Client/DTK_EntityShapeFunction.cpp
+  ${CMAKE_CURRENT_SOURCE_DIR}/OperatorVector/DTK_BasicEntityPredicates.cpp
+  ${CMAKE_CURRENT_SOURCE_DIR}/OperatorVector/DTK_FieldMultiVector.cpp
+  ${CMAKE_CURRENT_SOURCE_DIR}/OperatorVector/DTK_FunctionSpace.cpp
+  ${CMAKE_CURRENT_SOURCE_DIR}/OperatorVector/DTK_IntegrationPointSet.cpp
+  ${CMAKE_CURRENT_SOURCE_DIR}/OperatorVector/DTK_MapOperator.cpp
   )
 
 #
 # C) Define the targets for package's library(s)
 #
 
-TRIBITS_ADD_LIBRARY(
-  dtk_interface
-  HEADERS ${HEADERS}
-  SOURCES ${SOURCES}
-  )
+add_library(dtk_interface SHARED ${SOURCES})
+
