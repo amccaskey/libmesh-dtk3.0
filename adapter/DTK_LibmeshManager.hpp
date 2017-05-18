@@ -43,9 +43,12 @@
 #include <functional>
 #include <string>
 
-#include "DTK_ClientManager.hpp"
-#include "DTK_FieldMultiVector.hpp"
-#include "DTK_FunctionSpace.hpp"
+#include "DTK_LibmeshFieldMultiVector.hpp"
+#include "DTK_LibmeshEntityLocalMap.hpp"
+#include "DTK_LibmeshNodalShapeFunction.hpp"
+#include "DTK_LibmeshEntityIntegrationRule.hpp"
+#include "DTK_LibmeshEntityIterator.hpp"
+
 #include "DTK_Types.hpp"
 
 #include <Teuchos_RCP.hpp>
@@ -195,8 +198,14 @@ public:
 	/*!
 	 * \brief Given a variable name, build a field vector.
 	 */
-//    Teuchos::RCP<FieldMultiVector>
-//    createFieldMultiVector( const std::string &variable_name );
+	Teuchos::RCP<LibmeshFieldMultiVector> createFieldMultiVector(
+			const std::string &variable_name) {
+		auto field = Teuchos::rcp(
+				new LibmeshVariableField(d_mesh, d_system, variable_name));
+		return Teuchos::rcp(
+				new LibmeshFieldMultiVector(field,
+						d_function_space->entitySet()));
+	}
 //@{
 //! ClientManager interface implementation.
 	/*!

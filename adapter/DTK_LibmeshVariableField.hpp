@@ -44,8 +44,7 @@
 #include <string>
 #include <unordered_map>
 
-#include <DTK_Field.hpp>
-#include <DTK_Types.hpp>
+#include <DTK_DBC.hpp>
 
 #include <Teuchos_Array.hpp>
 #include <Teuchos_RCP.hpp>
@@ -53,6 +52,10 @@
 #include <libmesh/mesh_base.h>
 #include <libmesh/numeric_vector.h>
 #include <libmesh/system.h>
+#include <libmesh/mesh.h>
+#include <libmesh/node.h>
+#include <libmesh/parallel.h>
+#include <libmesh/point.h>
 
 namespace LibmeshAdapter
 {
@@ -101,7 +104,7 @@ class LibmeshVariableField {
     /*!
      * \brief Get the locally-owned entity support ids of the field.
      */
-    Teuchos::ArrayView<const SupportId> getLocalSupportIds() const {
+    Teuchos::ArrayView<const unsigned long int> getLocalSupportIds() const {
     	return d_support_ids();
     }
 
@@ -109,7 +112,7 @@ class LibmeshVariableField {
      * \brief Given a local support id and a dimension, read data from the
      * application field.
      */
-    double readFieldData( const SupportId support_id,
+    double readFieldData( const unsigned long int support_id,
                           const int dimension ) const {
         DTK_REQUIRE( 0 == dimension );
         const libMesh::Node &node = d_libmesh_mesh->node( support_id );
@@ -123,7 +126,7 @@ class LibmeshVariableField {
      * \brief Given a local support id, dimension, and field value, write data
      * into the application field.
 	 */
-	void writeFieldData(const SupportId support_id, const int dimension,
+	void writeFieldData(const unsigned long int support_id, const int dimension,
 			const double data) {
 		DTK_REQUIRE(0 == dimension);
 		const libMesh::Node &node = d_libmesh_mesh->node(support_id);
@@ -158,7 +161,7 @@ class LibmeshVariableField {
     int d_variable_id;
 
     // The support ids of the entities over which the field is constructed.
-    Teuchos::Array<SupportId> d_support_ids;
+    Teuchos::Array<unsigned long int> d_support_ids;
 };
 
 //---------------------------------------------------------------------------//

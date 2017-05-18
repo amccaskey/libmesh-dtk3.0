@@ -41,8 +41,6 @@
 #ifndef LIBMESHDTKADAPTERS_LIBMESHENTITYEXTRADATA_HPP
 #define LIBMESHDTKADAPTERS_LIBMESHENTITYEXTRADATA_HPP
 
-#include "DTK_EntityExtraData.hpp"
-
 #include <Teuchos_Ptr.hpp>
 
 #include <libmesh/elem.h>
@@ -56,8 +54,7 @@ namespace LibmeshAdapter
 */
 //---------------------------------------------------------------------------//
 template <class LibmeshGeom>
-class LibmeshEntityExtraData : public DataTransferKit::EntityExtraData
-{
+class LibmeshEntityExtraData {
   public:
     LibmeshEntityExtraData( const Teuchos::Ptr<LibmeshGeom> &libmesh_geom )
         : d_libmesh_geom( libmesh_geom )

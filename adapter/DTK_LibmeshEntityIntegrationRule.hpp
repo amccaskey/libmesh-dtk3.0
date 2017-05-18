@@ -43,10 +43,8 @@
 
 #include <map>
 
-#include "DTK_Entity.hpp"
-#include "DTK_EntityIntegrationRule.hpp"
-
 #include <Teuchos_Array.hpp>
+#include "DTK_LibmeshHelpers.hpp"
 
 #include <libmesh/quadrature.h>
 

@@ -32,50 +32,48 @@
 */
 //---------------------------------------------------------------------------//
 /*!
- * \brief DTK_LibmeshEntity.cpp
+ * \brief DTK_Types.hpp
  * \author Stuart R. Slattery
- * \brief Libmesh entity interface.
+ * \brief Types.
  */
 //---------------------------------------------------------------------------//
 
-#include "DTK_LibmeshEntity.hpp"
-#include "DTK_LibmeshEntityImpl.hpp"
+#ifndef DTK_TYPES_HPP
+#define DTK_TYPES_HPP
 
-#include <libmesh/elem.h>
-#include <libmesh/node.h>
+#include <functional>
+#include <limits>
 
-namespace LibmeshAdapter
+namespace DataTransferKit
 {
+//! Entity id type.
+typedef unsigned long int EntityId;
 
+//! Invalid entity id.
+static const EntityId dtk_invalid_entity_id =
+    std::numeric_limits<EntityId>::max();
 
-//---------------------------------------------------------------------------//
-// Constructor. Elem specialization.
-template <>
-LibmeshEntity<libMesh::Elem>::LibmeshEntity(
-    const Teuchos::Ptr<libMesh::Elem> &libmesh_elem,
-    const Teuchos::Ptr<libMesh::MeshBase> &libmesh_mesh,
-    const Teuchos::Ptr<LibmeshAdjacencies> &adjacencies )
-{
-    this->b_entity_impl = Teuchos::rcp( new LibmeshEntityImpl<libMesh::Elem>(
-        libmesh_elem, libmesh_mesh, adjacencies ) );
-}
+//! Support id type.
+typedef unsigned long int SupportId;
 
-//---------------------------------------------------------------------------//
-// Constructor. Node specialization.
-template <>
-LibmeshEntity<libMesh::Node>::LibmeshEntity(
-    const Teuchos::Ptr<libMesh::Node> &libmesh_node,
-    const Teuchos::Ptr<libMesh::MeshBase> &libmesh_mesh,
-    const Teuchos::Ptr<LibmeshAdjacencies> &adjacencies )
-{
-    this->b_entity_impl = Teuchos::rcp( new LibmeshEntityImpl<libMesh::Node>(
-        libmesh_node, libmesh_mesh, adjacencies ) );
-}
+//! Invalid support id.
+static const SupportId dtk_invalid_support_id =
+    std::numeric_limits<SupportId>::max();
+
+// Forward declaration of Entity.
+//class Entity;
+
+//! Predicate function typedef.
+//typedef std::function<bool( Entity )> PredicateFunction;
 
 //---------------------------------------------------------------------------//
 
-} // end namespace LibmeshAdapter
+} // end namespace DataTransferKit
 
 //---------------------------------------------------------------------------//
-// end DTK_Entity.cpp
+
+#endif // end DTK_TYPES_HPP
+
+//---------------------------------------------------------------------------//
+// end DTK_Types.hpp
 //---------------------------------------------------------------------------//

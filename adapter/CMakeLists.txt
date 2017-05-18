@@ -3,15 +3,14 @@ set (PACKAGE_DESCIPTION "This package provides a convenient adapter for working 
 set (LIBRARY_NAME libmesh-adapter)
 
 file (GLOB HEADERS *.hpp)
-file (GLOB SRC *.cpp)
 
 include_directories(${CMAKE_SOURCE_DIR})
 
-add_library(${LIBRARY_NAME} SHARED ${SRC})
-
 install(FILES ${HEADERS} DESTINATION include)
-install(TARGETS ${LIBRARY_NAME} DESTINATION lib)
+
+link_directories("${Libmesh_LIBRARY_DIRS}")
+link_directories("${DTK_TRILINOS_ROOT}/lib")
 
 # Gather tests
 file (GLOB test_files test/*.cpp)
-add_tests("${test_files}" "${CMAKE_CURRENT_SOURCE_DIR}" "${LIBRARY_NAME}")
+add_boost_tests("${test_files}" "${CMAKE_CURRENT_SOURCE_DIR}" "mesh_opt;${MPI_LIBRARIES};${Boost_LIBRARIES};teuchoscomm;kokkoscore;teuchoscore;teuchoskokkoscomm;teuchosnumerics;teuchosparameterlist;dtk_interface;dtk_utils;tpetra;tpetraclassic;tpetraclassiclinalg;tpetraext;tpetrainout;tpetrakernels;tpetraclassicnodeapi")

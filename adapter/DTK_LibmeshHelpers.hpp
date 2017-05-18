@@ -41,7 +41,7 @@
 #ifndef LIBMESHDTKADAPTERS_LIBMESHHELPERS_HPP
 #define LIBMESHDTKADAPTERS_LIBMESHHELPERS_HPP
 
-#include "DTK_Entity.hpp"
+#include "DTK_LibmeshEntity.hpp"
 #include "DTK_LibmeshEntityExtraData.hpp"
 
 #include <Teuchos_Ptr.hpp>

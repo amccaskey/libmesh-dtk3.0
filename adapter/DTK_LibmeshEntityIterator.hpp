@@ -55,6 +55,10 @@
 
 namespace LibmeshAdapter {
 
+using NodePredicateFunction = std::function<bool(LibmeshEntity<libMesh::Node>)>;
+using ElemPredicateFunction = std::function<bool(LibmeshEntity<libMesh::Elem>)>;
+
+
 template<class LibmeshGeomIterator>
 class LibmeshEntityIterator: public std::iterator<std::forward_iterator_tag,
 		LibmeshEntity<
@@ -64,8 +68,10 @@ public:
 
 	using BaseIterType = LibmeshEntityIterator<LibmeshGeomIterator>;
 	using LibmeshEntityType = LibmeshEntity<typename std::remove_pointer<typename LibmeshGeomIterator::value_type>::type>;
+	using PredicateFunction = typename std::conditional<std::is_same<LibmeshEntityType, LibmeshEntity<libMesh::Node>>::value,
+			NodePredicateFunction, ElemPredicateFunction>::type;
 
-   /*!
+	/*!
     * \brief Constructor.
     */
 	LibmeshEntityIterator() {}
@@ -197,7 +203,7 @@ public:
    std::unique_ptr<BaseIterType> b_iterator_impl;
 
    // Predicate.
-   DataTransferKit::PredicateFunction b_predicate;
+   PredicateFunction b_predicate;
 
  protected:
    // Create a clone of the iterator. We need this for the copy constructor
@@ -246,7 +252,7 @@ public:
 	    DTK_REQUIRE( *b_iterator_impl != b_iterator_impl->end() );
 
 	    // Apply the increment operator.
-	    BastIterType &it = b_iterator_impl->operator++();
+	    BaseIterType &it = b_iterator_impl->operator++();
 
 	    // Get the end of the range.
 	    BaseIterType end = b_iterator_impl->end();

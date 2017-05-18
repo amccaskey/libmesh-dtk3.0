@@ -37,6 +37,9 @@
  * \brief LibmeshEntity unit tests.
  */
 //---------------------------------------------------------------------------//
+#define BOOST_TEST_DYN_LINK
+#define BOOST_TEST_MODULE LibmeshEntityTester
+#include <boost/test/included/unit_test.hpp>
 
 #include <algorithm>
 #include <cassert>
@@ -57,7 +60,6 @@
 #include <Teuchos_OpaqueWrapper.hpp>
 #include <Teuchos_RCP.hpp>
 #include <Teuchos_Tuple.hpp>
-#include <Teuchos_UnitTestHarness.hpp>
 #include <Teuchos_VerboseObject.hpp>
 
 #include <libmesh/cell_hex8.h>
@@ -83,23 +85,24 @@ Teuchos::RCP<const Teuchos::Comm<Ordinal>> getDefaultComm()
 
 //---------------------------------------------------------------------------//
 // Hex-8 test.
-TEUCHOS_UNIT_TEST( LibmeshEntity, hex_8_test )
+BOOST_AUTO_TEST_CASE( checkLibmeshEntity )
 {
-    // Extract the raw mpi communicator.
-    Teuchos::RCP<const Teuchos::Comm<int>> comm = getDefaultComm<int>();
-    Teuchos::RCP<const Teuchos::MpiComm<int>> mpi_comm =
-        Teuchos::rcp_dynamic_cast<const Teuchos::MpiComm<int>>( comm );
-    Teuchos::RCP<const Teuchos::OpaqueWrapper<MPI_Comm>> opaque_comm =
-        mpi_comm->getRawMpiComm();
-    MPI_Comm raw_comm = ( *opaque_comm )();
+	const std::string argv_string = "unit_test --keep-cout";
+	const char *argv_char = argv_string.c_str();
+	Teuchos::GlobalMPISession mpiSession(
+			&boost::unit_test::framework::master_test_suite().argc,
+			&boost::unit_test::framework::master_test_suite().argv);
+	auto comm = Teuchos::DefaultComm<int>::getComm();
+	auto mpi_comm = Teuchos::rcp_dynamic_cast<const Teuchos::MpiComm<int>>(
+			comm);
+	auto opaque_comm = mpi_comm->getRawMpiComm();
+	auto raw_comm = (*opaque_comm)();
 
     // Create the mesh.
     int space_dim = 3;
-    const std::string argv_string = "--keep-cout";
-    const char *argv_char = argv_string.c_str();
     libMesh::LibMeshInit libmesh_init( 1, &argv_char, raw_comm );
-    TEST_ASSERT( libMesh::initialized() );
-    TEST_EQUALITY( (int)libmesh_init.comm().rank(), comm->getRank() );
+    BOOST_VERIFY( libMesh::initialized() );
+    BOOST_VERIFY( (int)libmesh_init.comm().rank() == comm->getRank() );
     Teuchos::RCP<libMesh::Mesh> mesh =
         Teuchos::rcp( new libMesh::Mesh( libmesh_init.comm(), space_dim ) );
 
@@ -189,83 +192,83 @@ TEUCHOS_UNIT_TEST( LibmeshEntity, hex_8_test )
     mesh->libmesh_assert_valid_parallel_ids();
 
     // Make an adjacency data structure.
-    DataTransferKit::LibmeshAdjacencies adjacencies( mesh );
+    LibmeshAdapter::LibmeshAdjacencies adjacencies( mesh );
 
     // Create a DTK entity for the hex.
-    DataTransferKit::Entity dtk_entity =
-        DataTransferKit::LibmeshEntity<libMesh::Elem>(
+   auto dtk_entity =
+        LibmeshAdapter::LibmeshEntity<libMesh::Elem>(
             Teuchos::ptr( hex_elem ), mesh.ptr(),
             Teuchos::ptrFromRef( adjacencies ) );
 
     // Print out the entity.
     Teuchos::RCP<Teuchos::FancyOStream> fancy_out =
         Teuchos::VerboseObjectBase::getDefaultOStream();
-    dtk_entity.describe( *fancy_out );
+//    dtk_entity.describe( *fancy_out );
 
     // Test the entity.
-    TEST_EQUALITY( hex_elem->id(), dtk_entity.id() );
-    TEST_EQUALITY( rank, dtk_entity.ownerRank() );
-    TEST_EQUALITY( space_dim, dtk_entity.topologicalDimension() );
-    TEST_EQUALITY( space_dim, dtk_entity.physicalDimension() );
+    BOOST_VERIFY( hex_elem->id() == dtk_entity.id() );
+    BOOST_VERIFY( rank == dtk_entity.ownerRank() );
+    BOOST_VERIFY( space_dim == dtk_entity.topologicalDimension() );
+    BOOST_VERIFY( space_dim == dtk_entity.physicalDimension() );
 
-    TEST_ASSERT( dtk_entity.inBlock( subdomain_1_id ) );
-    TEST_ASSERT( !dtk_entity.inBlock( subdomain_2_id ) );
+    BOOST_VERIFY( dtk_entity.inBlock( subdomain_1_id ) );
+    BOOST_VERIFY( !dtk_entity.inBlock( subdomain_2_id ) );
 
-    TEST_ASSERT( dtk_entity.onBoundary( boundary_1_id ) );
-    TEST_ASSERT( !dtk_entity.onBoundary( boundary_2_id ) );
+    BOOST_VERIFY( dtk_entity.onBoundary( boundary_1_id ) );
+    BOOST_VERIFY( !dtk_entity.onBoundary( boundary_2_id ) );
 
-    Teuchos::RCP<DataTransferKit::EntityExtraData> elem_extra_data =
+   auto elem_extra_data =
         dtk_entity.extraData();
-    TEST_EQUALITY( hex_elem,
+   BOOST_VERIFY( hex_elem ==
                    Teuchos::rcp_dynamic_cast<
-                       DataTransferKit::LibmeshEntityExtraData<libMesh::Elem>>(
+                       LibmeshAdapter::LibmeshEntityExtraData<libMesh::Elem>>(
                        elem_extra_data )
                        ->d_libmesh_geom.getRawPtr() );
 
     Teuchos::Tuple<double, 6> hex_bounds;
     dtk_entity.boundingBox( hex_bounds );
-    TEST_EQUALITY( 0.0, hex_bounds[0] );
-    TEST_EQUALITY( 0.0, hex_bounds[1] );
-    TEST_EQUALITY( 0.0, hex_bounds[2] );
-    TEST_EQUALITY( 1.0, hex_bounds[3] );
-    TEST_EQUALITY( 1.0, hex_bounds[4] );
-    TEST_EQUALITY( 1.0, hex_bounds[5] );
+    BOOST_VERIFY( 0.0 == hex_bounds[0] );
+    BOOST_VERIFY( 0.0 == hex_bounds[1] );
+    BOOST_VERIFY( 0.0 == hex_bounds[2] );
+    BOOST_VERIFY( 1.0 == hex_bounds[3] );
+    BOOST_VERIFY( 1.0 == hex_bounds[4] );
+    BOOST_VERIFY( 1.0 == hex_bounds[5] );
 
     // Test a node.
-    DataTransferKit::Entity dtk_node =
-        DataTransferKit::LibmeshEntity<libMesh::Node>(
+  auto dtk_node =
+        LibmeshAdapter::LibmeshEntity<libMesh::Node>(
             Teuchos::ptr( nodes[0] ), mesh.ptr(),
             Teuchos::ptrFromRef( adjacencies ) );
-    TEST_EQUALITY( nodes[0]->id(), dtk_node.id() );
-    TEST_EQUALITY( rank, dtk_node.ownerRank() );
-    TEST_EQUALITY( 0, dtk_node.topologicalDimension() );
-    TEST_EQUALITY( space_dim, dtk_node.physicalDimension() );
+  BOOST_VERIFY( nodes[0]->id() == dtk_node.id() );
+  BOOST_VERIFY( rank == dtk_node.ownerRank() );
+  BOOST_VERIFY( 0 == dtk_node.topologicalDimension() );
+  BOOST_VERIFY( space_dim == dtk_node.physicalDimension() );
 
-    TEST_ASSERT( dtk_node.inBlock( subdomain_1_id ) );
-    TEST_ASSERT( !dtk_node.inBlock( subdomain_2_id ) );
+  BOOST_VERIFY( dtk_node.inBlock( subdomain_1_id ) );
+  BOOST_VERIFY( !dtk_node.inBlock( subdomain_2_id ) );
 
-    TEST_ASSERT( !dtk_node.onBoundary( boundary_1_id ) );
-    TEST_ASSERT( dtk_node.onBoundary( boundary_2_id ) );
+  BOOST_VERIFY( !dtk_node.onBoundary( boundary_1_id ) );
+  BOOST_VERIFY( dtk_node.onBoundary( boundary_2_id ) );
 
-    Teuchos::RCP<DataTransferKit::EntityExtraData> node_extra_data =
+    auto node_extra_data =
         dtk_node.extraData();
-    TEST_EQUALITY( nodes[0],
+    BOOST_VERIFY( nodes[0] ==
                    Teuchos::rcp_dynamic_cast<
-                       DataTransferKit::LibmeshEntityExtraData<libMesh::Node>>(
+				   LibmeshAdapter::LibmeshEntityExtraData<libMesh::Node>>(
                        node_extra_data )
                        ->d_libmesh_geom.getRawPtr() );
 
     Teuchos::Tuple<double, 6> node_bounds;
     dtk_node.boundingBox( node_bounds );
-    TEST_EQUALITY( 0.0, node_bounds[0] );
-    TEST_EQUALITY( 0.0, node_bounds[1] );
-    TEST_EQUALITY( 0.0, node_bounds[2] );
-    TEST_EQUALITY( 0.0, node_bounds[3] );
-    TEST_EQUALITY( 0.0, node_bounds[4] );
-    TEST_EQUALITY( 0.0, node_bounds[5] );
+    BOOST_VERIFY( 0.0 == node_bounds[0] );
+    BOOST_VERIFY( 0.0 == node_bounds[1] );
+    BOOST_VERIFY( 0.0 == node_bounds[2] );
+    BOOST_VERIFY( 0.0 == node_bounds[3] );
+    BOOST_VERIFY( 0.0 == node_bounds[4] );
+    BOOST_VERIFY( 0.0 == node_bounds[5] );
 
     // Print out the node.
-    dtk_node.describe( *fancy_out );
+//    dtk_node.describe( *fancy_out );
 }
 
 //---------------------------------------------------------------------------//

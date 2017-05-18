@@ -38,6 +38,9 @@
  * \brief  Nodal shape function test.
  */
 //---------------------------------------------------------------------------//
+#define BOOST_TEST_DYN_LINK
+#define BOOST_TEST_MODULE LibmeshNodalShapeFunctionTester
+#include <boost/test/included/unit_test.hpp>
 
 #include <cmath>
 #include <iostream>
@@ -53,7 +56,6 @@
 #include "Teuchos_DefaultComm.hpp"
 #include "Teuchos_Ptr.hpp"
 #include "Teuchos_RCP.hpp"
-#include "Teuchos_UnitTestHarness.hpp"
 #include <Teuchos_DefaultMpiComm.hpp>
 
 #include <libmesh/cell_hex8.h>
@@ -68,24 +70,24 @@
 
 //---------------------------------------------------------------------------//
 // Hex-8 test.
-TEUCHOS_UNIT_TEST( LibmeshNodalShapeFunction, hex_8_test )
+BOOST_AUTO_TEST_CASE( checkLibmeshNodalShapeFunction )
 {
-    // Extract the raw mpi communicator.
-    Teuchos::RCP<const Teuchos::Comm<int>> comm =
-        Teuchos::DefaultComm<int>::getComm();
-    Teuchos::RCP<const Teuchos::MpiComm<int>> mpi_comm =
-        Teuchos::rcp_dynamic_cast<const Teuchos::MpiComm<int>>( comm );
-    Teuchos::RCP<const Teuchos::OpaqueWrapper<MPI_Comm>> opaque_comm =
-        mpi_comm->getRawMpiComm();
-    MPI_Comm raw_comm = ( *opaque_comm )();
+	const std::string argv_string = "unit_test --keep-cout";
+	const char *argv_char = argv_string.c_str();
+	Teuchos::GlobalMPISession mpiSession(
+			&boost::unit_test::framework::master_test_suite().argc,
+			&boost::unit_test::framework::master_test_suite().argv);
+	auto comm = Teuchos::DefaultComm<int>::getComm();
+	auto mpi_comm = Teuchos::rcp_dynamic_cast<const Teuchos::MpiComm<int>>(
+			comm);
+	auto opaque_comm = mpi_comm->getRawMpiComm();
+	auto raw_comm = (*opaque_comm)();
 
     // Create the mesh.
     int space_dim = 3;
-    const std::string argv_string = "unit_test";
-    const char *argv_char = argv_string.c_str();
     libMesh::LibMeshInit libmesh_init( 1, &argv_char, raw_comm );
-    TEST_ASSERT( libMesh::initialized() );
-    TEST_EQUALITY( (int)libmesh_init.comm().rank(), comm->getRank() );
+    BOOST_ASSERT( libMesh::initialized() );
+    BOOST_ASSERT( (int)libmesh_init.comm().rank() == comm->getRank() );
     Teuchos::RCP<libMesh::Mesh> mesh =
         Teuchos::rcp( new libMesh::Mesh( libmesh_init.comm(), space_dim ) );
 
@@ -161,11 +163,11 @@ TEUCHOS_UNIT_TEST( LibmeshNodalShapeFunction, hex_8_test )
     mesh->libmesh_assert_valid_parallel_ids();
 
     // Make an adjacency data structure.
-    DataTransferKit::LibmeshAdjacencies adjacencies( mesh );
+    LibmeshAdapter::LibmeshAdjacencies adjacencies( mesh );
 
     // Create a DTK entity for the hex.
-    DataTransferKit::Entity dtk_entity =
-        DataTransferKit::LibmeshEntity<libMesh::Elem>(
+   auto dtk_entity =
+        LibmeshAdapter::LibmeshEntity<libMesh::Elem>(
             Teuchos::ptr( hex_elem ), mesh.ptr(),
             Teuchos::ptrFromRef( adjacencies ) );
 
@@ -177,50 +179,50 @@ TEUCHOS_UNIT_TEST( LibmeshNodalShapeFunction, hex_8_test )
     system.add_variable( "test_var", libMesh::FIRST );
 
     // Create a shape function.
-    Teuchos::RCP<DataTransferKit::EntityShapeFunction> shape_function =
-        Teuchos::rcp( new DataTransferKit::LibmeshNodalShapeFunction(
+    auto shape_function =
+        Teuchos::rcp( new LibmeshAdapter::LibmeshNodalShapeFunction(
             mesh, Teuchos::rcpFromRef( system ) ) );
 
     // Test the shape function dof ids for the hex.
     Teuchos::Array<DataTransferKit::SupportId> dof_ids;
     shape_function->entitySupportIds( dtk_entity, dof_ids );
-    TEST_EQUALITY( num_nodes, dof_ids.size() );
+    BOOST_ASSERT( num_nodes == dof_ids.size() );
     for ( int n = 0; n < num_nodes; ++n )
     {
-        TEST_EQUALITY( dof_ids[n], nodes[n]->id() );
+    	BOOST_ASSERT( dof_ids[n] == nodes[n]->id() );
     }
 
     // Test the value evaluation for the hex.
     Teuchos::Array<double> ref_point( space_dim, 0.0 );
     Teuchos::Array<double> values;
     shape_function->evaluateValue( dtk_entity, ref_point(), values );
-    TEST_EQUALITY( values.size(), num_nodes );
+    BOOST_ASSERT( values.size() == num_nodes );
     for ( int n = 0; n < num_nodes; ++n )
     {
-        TEST_EQUALITY( values[n], 1.0 / num_nodes );
+    	BOOST_ASSERT( values[n] == 1.0 / num_nodes );
     }
     ref_point[0] = -1.0;
     ref_point[1] = -1.0;
     ref_point[2] = -1.0;
     shape_function->evaluateValue( dtk_entity, ref_point(), values );
-    TEST_EQUALITY( values.size(), num_nodes );
-    TEST_EQUALITY( values[0], 1.0 );
+    BOOST_ASSERT( values.size() == num_nodes );
+    BOOST_ASSERT( values[0] == 1.0 );
     for ( int n = 1; n < num_nodes; ++n )
     {
-        TEST_EQUALITY( values[n], 0.0 );
+    	BOOST_ASSERT( values[n] == 0.0 );
     }
 
     // Test the shape function dof ids for the nodes.
     for ( int n = 0; n < num_nodes; ++n )
     {
         dof_ids.clear();
-        DataTransferKit::Entity dtk_node =
-            DataTransferKit::LibmeshEntity<libMesh::Node>(
+       auto dtk_node =
+            LibmeshAdapter::LibmeshEntity<libMesh::Node>(
                 Teuchos::ptr( nodes[n] ), mesh.ptr(),
                 Teuchos::ptrFromRef( adjacencies ) );
         shape_function->entitySupportIds( dtk_node, dof_ids );
-        TEST_EQUALITY( dof_ids.size(), 1 );
-        TEST_EQUALITY( dof_ids[0], nodes[n]->id() );
+        BOOST_ASSERT( dof_ids.size() == 1 );
+        BOOST_ASSERT( dof_ids[0] == nodes[n]->id() );
     }
 }
 

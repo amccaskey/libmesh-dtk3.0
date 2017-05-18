@@ -38,6 +38,10 @@
  */
 //---------------------------------------------------------------------------//
 
+#define BOOST_TEST_DYN_LINK
+#define BOOST_TEST_MODULE LibmeshEntitySetTester
+#include <boost/test/included/unit_test.hpp>
+
 #include <algorithm>
 #include <cassert>
 #include <cmath>
@@ -49,8 +53,6 @@
 #include <DTK_LibmeshEntityExtraData.hpp>
 #include <DTK_LibmeshEntitySet.hpp>
 
-#include <DTK_EntitySet.hpp>
-
 #include <Teuchos_Array.hpp>
 #include <Teuchos_ArrayRCP.hpp>
 #include <Teuchos_CommHelpers.hpp>
@@ -60,7 +62,6 @@
 #include <Teuchos_RCP.hpp>
 #include <Teuchos_Tuple.hpp>
 #include <Teuchos_TypeTraits.hpp>
-#include <Teuchos_UnitTestHarness.hpp>
 
 #include <libmesh/cell_hex8.h>
 #include <libmesh/libmesh.h>
@@ -85,23 +86,24 @@ Teuchos::RCP<const Teuchos::Comm<Ordinal>> getDefaultComm()
 
 //---------------------------------------------------------------------------//
 // Hex-8 test.
-TEUCHOS_UNIT_TEST( LibmeshEntitySet, hex_8_test )
+BOOST_AUTO_TEST_CASE( checkLibmeshEntitySet )
 {
-    // Extract the raw mpi communicator.
-    Teuchos::RCP<const Teuchos::Comm<int>> comm = getDefaultComm<int>();
-    Teuchos::RCP<const Teuchos::MpiComm<int>> mpi_comm =
-        Teuchos::rcp_dynamic_cast<const Teuchos::MpiComm<int>>( comm );
-    Teuchos::RCP<const Teuchos::OpaqueWrapper<MPI_Comm>> opaque_comm =
-        mpi_comm->getRawMpiComm();
-    MPI_Comm raw_comm = ( *opaque_comm )();
+	const std::string argv_string = "unit_test --keep-cout";
+	const char *argv_char = argv_string.c_str();
+	Teuchos::GlobalMPISession mpiSession(
+			&boost::unit_test::framework::master_test_suite().argc,
+			&boost::unit_test::framework::master_test_suite().argv);
+	auto comm = Teuchos::DefaultComm<int>::getComm();
+	auto mpi_comm = Teuchos::rcp_dynamic_cast<const Teuchos::MpiComm<int>>(
+			comm);
+	auto opaque_comm = mpi_comm->getRawMpiComm();
+	auto raw_comm = (*opaque_comm)();
 
     // Create the mesh.
     int space_dim = 3;
-    const std::string argv_string = "unit_test";
-    const char *argv_char = argv_string.c_str();
     libMesh::LibMeshInit libmesh_init( 1, &argv_char, raw_comm );
-    TEST_ASSERT( libMesh::initialized() );
-    TEST_EQUALITY( (int)libmesh_init.comm().rank(), comm->getRank() );
+    BOOST_VERIFY( libMesh::initialized() );
+    BOOST_VERIFY( (int)libmesh_init.comm().rank() == comm->getRank() );
     Teuchos::RCP<libMesh::Mesh> mesh =
         Teuchos::rcp( new libMesh::Mesh( libmesh_init.comm(), space_dim ) );
 
@@ -191,104 +193,106 @@ TEUCHOS_UNIT_TEST( LibmeshEntitySet, hex_8_test )
     mesh->libmesh_assert_valid_parallel_ids();
 
     // Create an entity set.
-    Teuchos::RCP<DataTransferKit::EntitySet> entity_set =
-        Teuchos::rcp( new DataTransferKit::LibmeshEntitySet( mesh ) );
+    auto entity_set =
+        Teuchos::rcp( new LibmeshAdapter::LibmeshEntitySet( mesh ) );
 
     // Test the set.
     Teuchos::RCP<const Teuchos::Comm<int>> set_comm =
         entity_set->communicator();
-    TEST_EQUALITY( set_comm->getRank(), comm->getRank() );
-    TEST_EQUALITY( set_comm->getSize(), comm->getSize() );
-    TEST_EQUALITY( space_dim, entity_set->physicalDimension() );
+    BOOST_VERIFY( set_comm->getRank() == comm->getRank() );
+    BOOST_VERIFY( set_comm->getSize() == comm->getSize() );
+    BOOST_VERIFY( space_dim == entity_set->physicalDimension() );
 
     // Make an iterator for the hex.
-    std::function<bool( DataTransferKit::Entity )> all_pred =
-        [=]( DataTransferKit::Entity ) { return true; };
-    DataTransferKit::EntityIterator volume_iterator =
-        entity_set->entityIterator( 3, all_pred );
+    LibmeshAdapter::ElemPredicateFunction all_pred =
+        [=]( LibmeshAdapter::LibmeshEntity<libMesh::Elem> ) { return true; };
+    auto volume_iterator =
+        entity_set->entityIterator( all_pred );
 
     // Test the volume iterator.
-    TEST_EQUALITY( volume_iterator.size(), 1 );
-    TEST_ASSERT( volume_iterator == volume_iterator.begin() );
-    TEST_ASSERT( volume_iterator != volume_iterator.end() );
+    BOOST_VERIFY( volume_iterator.size() == 1 );
+    BOOST_VERIFY( volume_iterator == volume_iterator.begin() );
+    BOOST_VERIFY( volume_iterator != volume_iterator.end() );
 
     // Test the volume under the iterator.
-    TEST_EQUALITY( hex_elem->id(), volume_iterator->id() );
-    TEST_EQUALITY( comm->getRank(), volume_iterator->ownerRank() );
-    TEST_EQUALITY( space_dim, volume_iterator->topologicalDimension() );
-    TEST_EQUALITY( space_dim, volume_iterator->physicalDimension() );
+    BOOST_VERIFY( hex_elem->id() == volume_iterator->id() );
+    BOOST_VERIFY( comm->getRank() == volume_iterator->ownerRank() );
+    BOOST_VERIFY( space_dim == volume_iterator->topologicalDimension() );
+    BOOST_VERIFY( space_dim == volume_iterator->physicalDimension() );
 
-    Teuchos::RCP<DataTransferKit::EntityExtraData> extra_data_1 =
+   auto extra_data_1 =
         volume_iterator->extraData();
-    TEST_EQUALITY( hex_elem,
+   BOOST_VERIFY( hex_elem ==
                    Teuchos::rcp_dynamic_cast<
-                       DataTransferKit::LibmeshEntityExtraData<libMesh::Elem>>(
+                       LibmeshAdapter::LibmeshEntityExtraData<libMesh::Elem>>(
                        extra_data_1 )
                        ->d_libmesh_geom.getRawPtr() );
 
     Teuchos::Tuple<double, 6> hex_bounds_1;
     volume_iterator->boundingBox( hex_bounds_1 );
-    TEST_EQUALITY( 0.0, hex_bounds_1[0] );
-    TEST_EQUALITY( 0.0, hex_bounds_1[1] );
-    TEST_EQUALITY( 0.0, hex_bounds_1[2] );
-    TEST_EQUALITY( 1.0, hex_bounds_1[3] );
-    TEST_EQUALITY( 1.0, hex_bounds_1[4] );
-    TEST_EQUALITY( 1.0, hex_bounds_1[5] );
+    BOOST_VERIFY( 0.0 == hex_bounds_1[0] );
+    BOOST_VERIFY( 0.0 == hex_bounds_1[1] );
+    BOOST_VERIFY( 0.0 == hex_bounds_1[2] );
+    BOOST_VERIFY( 1.0 == hex_bounds_1[3] );
+    BOOST_VERIFY( 1.0 == hex_bounds_1[4] );
+    BOOST_VERIFY( 1.0 == hex_bounds_1[5] );
 
     // Test the end of the iterator.
     volume_iterator++;
-    TEST_ASSERT( volume_iterator != volume_iterator.begin() );
-    TEST_ASSERT( volume_iterator == volume_iterator.end() );
+    BOOST_VERIFY( volume_iterator != volume_iterator.begin() );
+    BOOST_VERIFY( volume_iterator == volume_iterator.end() );
 
     // Make an iterator for the nodes.
-    DataTransferKit::EntityIterator node_iterator =
-        entity_set->entityIterator( 0, all_pred );
+    LibmeshAdapter::NodePredicateFunction all_node_pred =
+            [=]( LibmeshAdapter::LibmeshEntity<libMesh::Node> ) { return true; };
+   auto node_iterator =
+        entity_set->entityIterator( all_node_pred );
 
     // Test the node iterator.
     unsigned num_nodes = 8;
-    TEST_EQUALITY( node_iterator.size(), num_nodes );
-    TEST_ASSERT( node_iterator == node_iterator.begin() );
-    TEST_ASSERT( node_iterator != node_iterator.end() );
-    DataTransferKit::EntityIterator node_begin = node_iterator.begin();
-    DataTransferKit::EntityIterator node_end = node_iterator.end();
+    BOOST_VERIFY( node_iterator.size() == num_nodes );
+    BOOST_VERIFY( node_iterator == node_iterator.begin() );
+    BOOST_VERIFY( node_iterator != node_iterator.end() );
+    auto node_begin = node_iterator.begin();
+    auto node_end = node_iterator.end();
     auto node_id_it = nodes.begin();
     for ( node_iterator = node_begin; node_iterator != node_end;
           ++node_iterator, ++node_id_it )
     {
-        TEST_EQUALITY( node_iterator->id(), ( *node_id_it )->id() );
+    	BOOST_VERIFY( node_iterator->id() == ( *node_id_it )->id() );
     }
 
     // Get each entity and check.
-    DataTransferKit::Entity set_hex;
-    entity_set->getEntity( hex_elem->id(), 3, set_hex );
-    TEST_EQUALITY( set_hex.id(), hex_elem->id() );
+    LibmeshAdapter::LibmeshEntity<libMesh::Elem> set_hex;
+    entity_set->getEntity( hex_elem->id(), set_hex );
+    BOOST_VERIFY( set_hex.id() == hex_elem->id() );
     for ( unsigned i = 0; i < num_nodes; ++i )
     {
-        DataTransferKit::Entity set_node;
-        entity_set->getEntity( nodes[i]->id(), 0, set_node );
-        TEST_EQUALITY( set_node.id(), nodes[i]->id() );
+    	LibmeshAdapter::LibmeshEntity<libMesh::Node> set_node;
+        entity_set->getEntity( nodes[i]->id(), set_node );
+        BOOST_VERIFY( set_node.id() == nodes[i]->id() );
     }
 
     // Check the adjacency function.
-    Teuchos::Array<DataTransferKit::Entity> hex_adjacent_volumes;
-    entity_set->getAdjacentEntities( set_hex, 3, hex_adjacent_volumes );
-    TEST_EQUALITY( 0, hex_adjacent_volumes.size() );
+    Teuchos::Array<LibmeshAdapter::LibmeshEntity<libMesh::Elem>> hex_adjacent_volumes;
+    entity_set->getAdjacentEntities( set_hex, hex_adjacent_volumes );
+    BOOST_VERIFY( 0 == hex_adjacent_volumes.size() );
 
-    Teuchos::Array<DataTransferKit::Entity> hex_adjacent_nodes;
-    entity_set->getAdjacentEntities( set_hex, 0, hex_adjacent_nodes );
-    TEST_EQUALITY( num_nodes, hex_adjacent_nodes.size() );
+    Teuchos::Array<LibmeshAdapter::LibmeshEntity<libMesh::Node>> hex_adjacent_nodes;
+    entity_set->getAdjacentEntities( set_hex, hex_adjacent_nodes );
+    BOOST_VERIFY( num_nodes == hex_adjacent_nodes.size() );
     for ( unsigned i = 0; i < num_nodes; ++i )
     {
-        TEST_EQUALITY( hex_adjacent_nodes[i].id(), nodes[i]->id() );
+    	BOOST_VERIFY( hex_adjacent_nodes[i].id() == nodes[i]->id() );
     }
 
     for ( unsigned i = 0; i < num_nodes; ++i )
     {
-        Teuchos::Array<DataTransferKit::Entity> node_adjacent_volumes;
-        entity_set->getAdjacentEntities( hex_adjacent_nodes[i], 3,
+        Teuchos::Array<LibmeshAdapter::LibmeshEntity<libMesh::Elem>> node_adjacent_volumes;
+        entity_set->getAdjacentEntities( hex_adjacent_nodes[i],
                                          node_adjacent_volumes );
-        TEST_EQUALITY( 1, node_adjacent_volumes.size() );
-        TEST_EQUALITY( node_adjacent_volumes[0].id(), hex_elem->id() );
+        BOOST_VERIFY( 1 == node_adjacent_volumes.size() );
+        BOOST_VERIFY( node_adjacent_volumes[0].id() == hex_elem->id() );
     }
 }
 

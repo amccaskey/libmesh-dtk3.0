@@ -37,6 +37,9 @@
  * \brief LibmeshAdjacencies unit tests.
  */
 //---------------------------------------------------------------------------//
+#define BOOST_TEST_DYN_LINK
+#define BOOST_TEST_MODULE LibmeshEntityAdjacenciesTester
+#include <boost/test/included/unit_test.hpp>
 
 #include <algorithm>
 #include <cassert>
@@ -54,7 +57,6 @@
 #include <Teuchos_OpaqueWrapper.hpp>
 #include <Teuchos_RCP.hpp>
 #include <Teuchos_Tuple.hpp>
-#include <Teuchos_UnitTestHarness.hpp>
 
 #include <libmesh/cell_hex8.h>
 #include <libmesh/libmesh.h>
@@ -79,23 +81,35 @@ Teuchos::RCP<const Teuchos::Comm<Ordinal>> getDefaultComm()
 
 //---------------------------------------------------------------------------//
 // Hex-8 test.
-TEUCHOS_UNIT_TEST( LibmeshAdjacencies, hex_8_test )
+BOOST_AUTO_TEST_CASE( checkLibmeshAdjacencies )
 {
-    // Extract the raw mpi communicator.
-    Teuchos::RCP<const Teuchos::Comm<int>> comm = getDefaultComm<int>();
-    Teuchos::RCP<const Teuchos::MpiComm<int>> mpi_comm =
-        Teuchos::rcp_dynamic_cast<const Teuchos::MpiComm<int>>( comm );
-    Teuchos::RCP<const Teuchos::OpaqueWrapper<MPI_Comm>> opaque_comm =
-        mpi_comm->getRawMpiComm();
-    MPI_Comm raw_comm = ( *opaque_comm )();
+
+	const std::string argv_string = "unit_test --keep-cout";
+	const char *argv_char = argv_string.c_str();
+	Teuchos::GlobalMPISession mpiSession(
+			&boost::unit_test::framework::master_test_suite().argc,
+			&boost::unit_test::framework::master_test_suite().argv);
+	auto comm = Teuchos::DefaultComm<int>::getComm();
+	auto mpi_comm = Teuchos::rcp_dynamic_cast<const Teuchos::MpiComm<int>>(
+			comm);
+	auto opaque_comm = mpi_comm->getRawMpiComm();
+	auto raw_comm = (*opaque_comm)();
+
+//    // Extract the raw mpi communicator.
+//    Teuchos::RCP<const Teuchos::Comm<int>> comm = getDefaultComm<int>();
+//    Teuchos::RCP<const Teuchos::MpiComm<int>> mpi_comm =
+//        Teuchos::rcp_dynamic_cast<const Teuchos::MpiComm<int>>( comm );
+//    Teuchos::RCP<const Teuchos::OpaqueWrapper<MPI_Comm>> opaque_comm =
+//        mpi_comm->getRawMpiComm();
+//    MPI_Comm raw_comm = ( *opaque_comm )();
 
     // Create the mesh.
     int space_dim = 3;
-    const std::string argv_string = "--keep-cout";
-    const char *argv_char = argv_string.c_str();
+//    argv_string = "--keep-cout";
+//    argv_char = argv_string.c_str();
     libMesh::LibMeshInit libmesh_init( 1, &argv_char, raw_comm );
-    TEST_ASSERT( libMesh::initialized() );
-    TEST_EQUALITY( (int)libmesh_init.comm().rank(), comm->getRank() );
+    BOOST_VERIFY( libMesh::initialized() );
+    BOOST_VERIFY( (int)libmesh_init.comm().rank() == comm->getRank() );
     Teuchos::RCP<libMesh::Mesh> mesh =
         Teuchos::rcp( new libMesh::Mesh( libmesh_init.comm(), space_dim ) );
 
@@ -177,40 +191,40 @@ TEUCHOS_UNIT_TEST( LibmeshAdjacencies, hex_8_test )
     mesh->libmesh_assert_valid_parallel_ids();
 
     // Make an adjacency data structure.
-    DataTransferKit::LibmeshAdjacencies adjacencies( mesh );
+    LibmeshAdapter::LibmeshAdjacencies adjacencies( mesh );
 
     // Check the node adjacencies of the first hex elem.
     unsigned int num_nodes = 8;
     Teuchos::Array<Teuchos::Ptr<libMesh::Node>> elem_1_nodes;
     adjacencies.getLibmeshAdjacencies( Teuchos::ptr( hex_elem_1 ),
                                        elem_1_nodes );
-    TEST_EQUALITY( num_nodes, elem_1_nodes.size() );
+    BOOST_VERIFY( num_nodes == elem_1_nodes.size() );
     for ( unsigned int n = 0; n < num_nodes; ++n )
     {
-        TEST_EQUALITY( nodes[n]->id(), elem_1_nodes[n]->id() );
+    	BOOST_VERIFY( nodes[n]->id() == elem_1_nodes[n]->id() );
     };
 
     // Check the node adjacencies of the second hex elem.
     Teuchos::Array<Teuchos::Ptr<libMesh::Node>> elem_2_nodes;
     adjacencies.getLibmeshAdjacencies( Teuchos::ptr( hex_elem_2 ),
                                        elem_2_nodes );
-    TEST_EQUALITY( num_nodes, elem_2_nodes.size() );
+    BOOST_VERIFY( num_nodes == elem_2_nodes.size() );
     for ( unsigned int n = 0; n < num_nodes; ++n )
     {
-        TEST_EQUALITY( nodes[n]->id(), elem_2_nodes[n]->id() );
+    	BOOST_VERIFY( nodes[n]->id() == elem_2_nodes[n]->id() );
     };
 
     // Check the elem adjacencies of the first hex.
     Teuchos::Array<Teuchos::Ptr<libMesh::Elem>> elem_1_elems;
     adjacencies.getLibmeshAdjacencies( Teuchos::ptr( hex_elem_1 ),
                                        elem_1_elems );
-    TEST_EQUALITY( 0, elem_1_elems.size() );
+    BOOST_VERIFY( 0 == elem_1_elems.size() );
 
     // Check the elem adjacencies of the second hex.
     Teuchos::Array<Teuchos::Ptr<libMesh::Elem>> elem_2_elems;
     adjacencies.getLibmeshAdjacencies( Teuchos::ptr( hex_elem_2 ),
                                        elem_2_elems );
-    TEST_EQUALITY( 0, elem_2_elems.size() );
+    BOOST_VERIFY( 0 == elem_2_elems.size() );
 
     // Check the adjacencies of the nodes.
     for ( unsigned int n = 0; n < num_nodes; ++n )
@@ -218,14 +232,14 @@ TEUCHOS_UNIT_TEST( LibmeshAdjacencies, hex_8_test )
         Teuchos::Array<Teuchos::Ptr<libMesh::Elem>> node_elems;
         adjacencies.getLibmeshAdjacencies( Teuchos::ptr( nodes[n] ),
                                            node_elems );
-        TEST_EQUALITY( 2, node_elems.size() );
-        TEST_EQUALITY( hex_elem_2->id(), node_elems[0]->id() );
-        TEST_EQUALITY( hex_elem_1->id(), node_elems[1]->id() );
+        BOOST_VERIFY( 2 == node_elems.size() );
+        BOOST_VERIFY( hex_elem_2->id() == node_elems[0]->id() );
+        BOOST_VERIFY( hex_elem_1->id() == node_elems[1]->id() );
 
         Teuchos::Array<Teuchos::Ptr<libMesh::Node>> node_nodes;
         adjacencies.getLibmeshAdjacencies( Teuchos::ptr( nodes[n] ),
                                            node_nodes );
-        TEST_EQUALITY( 0, node_nodes.size() );
+        BOOST_VERIFY( 0 == node_nodes.size() );
     }
 }
 

@@ -37,6 +37,9 @@
  * \brief LibmeshEntityLocalMap unit tests.
  */
 //---------------------------------------------------------------------------//
+#define BOOST_TEST_DYN_LINK
+#define BOOST_TEST_MODULE LibmeshEntityLocalMapTester
+#include <boost/test/included/unit_test.hpp>
 
 #include <algorithm>
 #include <cassert>
@@ -59,7 +62,6 @@
 #include <Teuchos_RCP.hpp>
 #include <Teuchos_Tuple.hpp>
 #include <Teuchos_TypeTraits.hpp>
-#include <Teuchos_UnitTestHarness.hpp>
 
 #include <libmesh/cell_hex8.h>
 #include <libmesh/equation_systems.h>
@@ -93,23 +95,24 @@ const double epsilon = 1.0e-14;
 
 //---------------------------------------------------------------------------//
 // Hex-8 test.
-TEUCHOS_UNIT_TEST( LibmeshEntity, hex_8_test )
+BOOST_AUTO_TEST_CASE( checkEntityLocalMap )
 {
-    // Extract the raw mpi communicator.
-    Teuchos::RCP<const Teuchos::Comm<int>> comm = getDefaultComm<int>();
-    Teuchos::RCP<const Teuchos::MpiComm<int>> mpi_comm =
-        Teuchos::rcp_dynamic_cast<const Teuchos::MpiComm<int>>( comm );
-    Teuchos::RCP<const Teuchos::OpaqueWrapper<MPI_Comm>> opaque_comm =
-        mpi_comm->getRawMpiComm();
-    MPI_Comm raw_comm = ( *opaque_comm )();
+	const std::string argv_string = "unit_test --keep-cout";
+	const char *argv_char = argv_string.c_str();
+	Teuchos::GlobalMPISession mpiSession(
+			&boost::unit_test::framework::master_test_suite().argc,
+			&boost::unit_test::framework::master_test_suite().argv);
+	auto comm = Teuchos::DefaultComm<int>::getComm();
+	auto mpi_comm = Teuchos::rcp_dynamic_cast<const Teuchos::MpiComm<int>>(
+			comm);
+	auto opaque_comm = mpi_comm->getRawMpiComm();
+	auto raw_comm = (*opaque_comm)();
 
     // Create the mesh.
     int space_dim = 3;
-    const std::string argv_string = "unit_test";
-    const char *argv_char = argv_string.c_str();
     libMesh::LibMeshInit libmesh_init( 1, &argv_char, raw_comm );
-    TEST_ASSERT( libMesh::initialized() );
-    TEST_EQUALITY( (int)libmesh_init.comm().rank(), comm->getRank() );
+    BOOST_VERIFY( libMesh::initialized() );
+    BOOST_VERIFY( (int)libmesh_init.comm().rank() == comm->getRank() );
     Teuchos::RCP<libMesh::Mesh> mesh =
         Teuchos::rcp( new libMesh::Mesh( libmesh_init.comm(), space_dim ) );
 
@@ -184,11 +187,11 @@ TEUCHOS_UNIT_TEST( LibmeshEntity, hex_8_test )
     mesh->libmesh_assert_valid_parallel_ids();
 
     // Make an adjacency data structure.
-    DataTransferKit::LibmeshAdjacencies adjacencies( mesh );
+    LibmeshAdapter::LibmeshAdjacencies adjacencies( mesh );
 
     // Create a DTK entity for the hex.
-    DataTransferKit::Entity dtk_entity =
-        DataTransferKit::LibmeshEntity<libMesh::Elem>(
+    LibmeshAdapter::LibmeshEntity<libMesh::Elem> dtk_entity =
+        LibmeshAdapter::LibmeshEntity<libMesh::Elem>(
             Teuchos::ptr( hex_elem ), mesh.ptr(),
             Teuchos::ptrFromRef( adjacencies ) );
 
@@ -200,19 +203,19 @@ TEUCHOS_UNIT_TEST( LibmeshEntity, hex_8_test )
     system.add_variable( "test_var", libMesh::FIRST );
 
     // Create a local map from the libmesh mesh.
-    Teuchos::RCP<DataTransferKit::EntityLocalMap> local_map =
-        Teuchos::rcp( new DataTransferKit::LibmeshEntityLocalMap(
+    auto local_map =
+        Teuchos::rcp( new LibmeshAdapter::LibmeshEntityLocalMap(
             mesh, Teuchos::rcpFromRef( system ) ) );
 
     // Test the measure.
-    TEST_FLOATING_EQUALITY( local_map->measure( dtk_entity ), 8.0, epsilon );
+    BOOST_TEST( local_map->measure( dtk_entity ) == 8.0, boost::test_tools::tolerance(epsilon) );
 
     // Test the centroid.
     Teuchos::Array<double> centroid( space_dim, 0.0 );
     local_map->centroid( dtk_entity, centroid() );
-    TEST_EQUALITY( centroid[0], 1.0 );
-    TEST_EQUALITY( centroid[1], 1.0 );
-    TEST_EQUALITY( centroid[2], -1.0 );
+    BOOST_VERIFY( centroid[0] == 1.0 );
+    BOOST_VERIFY( centroid[1] ==  1.0 );
+    BOOST_VERIFY( centroid[2] == -1.0 );
 
     // Make a good point and a bad point.
     Teuchos::Array<double> good_point( space_dim );
@@ -225,58 +228,57 @@ TEUCHOS_UNIT_TEST( LibmeshEntity, hex_8_test )
     bad_point[2] = 0.35;
 
     // Test the reference frame safeguard.
-    TEST_ASSERT(
+    BOOST_VERIFY(
         local_map->isSafeToMapToReferenceFrame( dtk_entity, good_point() ) );
-    TEST_ASSERT(
+    BOOST_VERIFY(
         !local_map->isSafeToMapToReferenceFrame( dtk_entity, bad_point() ) );
 
     // Test the mapping to reference frame.
     Teuchos::Array<double> ref_good_point( space_dim );
     bool good_map = local_map->mapToReferenceFrame( dtk_entity, good_point(),
                                                     ref_good_point() );
-    TEST_ASSERT( good_map );
-    TEST_FLOATING_EQUALITY( ref_good_point[0], -0.5, epsilon );
-    TEST_FLOATING_EQUALITY( ref_good_point[1], 0.5, epsilon );
-    TEST_ASSERT( std::abs( ref_good_point[2] ) < epsilon );
+    BOOST_VERIFY( good_map );
+    BOOST_TEST( ref_good_point[0] == -0.5, boost::test_tools::tolerance(epsilon) );
+    BOOST_TEST( ref_good_point[1] == 0.5, boost::test_tools::tolerance(epsilon) );
+    BOOST_VERIFY( std::abs( ref_good_point[2] ) < epsilon );
 
     Teuchos::Array<double> ref_bad_point( space_dim );
     local_map->mapToReferenceFrame( dtk_entity, bad_point(), ref_bad_point() );
 
     // Test the point inclusion.
-    TEST_ASSERT(
+    BOOST_VERIFY(
         local_map->checkPointInclusion( dtk_entity, ref_good_point() ) );
-    TEST_ASSERT(
+    BOOST_VERIFY(
         !local_map->checkPointInclusion( dtk_entity, ref_bad_point() ) );
 
     // Test the map to physical frame.
     Teuchos::Array<double> phy_good_point( space_dim );
     local_map->mapToPhysicalFrame( dtk_entity, ref_good_point(),
                                    phy_good_point() );
-    TEST_FLOATING_EQUALITY( good_point[0], phy_good_point[0], epsilon );
-    TEST_FLOATING_EQUALITY( good_point[1], phy_good_point[1], epsilon );
-    TEST_FLOATING_EQUALITY( good_point[2], phy_good_point[2], epsilon );
+    BOOST_TEST( good_point[0] == phy_good_point[0], boost::test_tools::tolerance(epsilon) );
+    BOOST_TEST( good_point[1] == phy_good_point[1], boost::test_tools::tolerance(epsilon) );
+    BOOST_TEST( good_point[2] == phy_good_point[2], boost::test_tools::tolerance(epsilon) );
 
     Teuchos::Array<double> phy_bad_point( space_dim );
     local_map->mapToPhysicalFrame( dtk_entity, ref_bad_point(),
                                    phy_bad_point() );
-    TEST_FLOATING_EQUALITY( bad_point[0], phy_bad_point[0], epsilon );
-    TEST_FLOATING_EQUALITY( bad_point[1], phy_bad_point[1], epsilon );
-    TEST_FLOATING_EQUALITY( bad_point[2], phy_bad_point[2], epsilon );
+    BOOST_TEST( bad_point[0] == phy_bad_point[0], boost::test_tools::tolerance(epsilon) );
+    BOOST_TEST( bad_point[1] == phy_bad_point[1], boost::test_tools::tolerance(epsilon) );
+    BOOST_TEST( bad_point[2] == phy_bad_point[2], boost::test_tools::tolerance(epsilon) );
 
     // Test the coordinates of the points extracted through the centroid
     // function.
-    DataTransferKit::Entity dtk_node;
     Teuchos::Array<double> point_coords( space_dim );
     int num_nodes = 8;
     for ( int n = 0; n < num_nodes; ++n )
     {
-        dtk_node = DataTransferKit::LibmeshEntity<libMesh::Node>(
+        auto dtk_node = LibmeshAdapter::LibmeshEntity<libMesh::Node>(
             Teuchos::ptr( nodes[n] ), mesh.ptr(),
             Teuchos::ptrFromRef( adjacencies ) );
         local_map->centroid( dtk_node, point_coords() );
-        TEST_EQUALITY( ( *nodes[n] )( 0 ), point_coords[0] );
-        TEST_EQUALITY( ( *nodes[n] )( 1 ), point_coords[1] );
-        TEST_EQUALITY( ( *nodes[n] )( 2 ), point_coords[2] );
+        BOOST_TEST( ( *nodes[n] )( 0 ) == point_coords[0] );
+        BOOST_TEST( ( *nodes[n] )( 1 ) == point_coords[1] );
+        BOOST_TEST( ( *nodes[n] )( 2 ) == point_coords[2] );
     }
 }
 

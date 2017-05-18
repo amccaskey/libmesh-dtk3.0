@@ -38,7 +38,9 @@
  * \brief  integration rule function test.
  */
 //---------------------------------------------------------------------------//
-
+#define BOOST_TEST_DYN_LINK
+#define BOOST_TEST_MODULE LibmeshEntityLocalMapTester
+#include <boost/test/included/unit_test.hpp>
 #include <cmath>
 #include <iostream>
 #include <sstream>
@@ -68,24 +70,24 @@
 
 //---------------------------------------------------------------------------//
 // Hex-8 test.
-TEUCHOS_UNIT_TEST( LibmeshEntityIntegrationRule, hex_8_test )
+BOOST_AUTO_TEST_CASE( checkLibmeshEntityIntegrationRule )
 {
-    // Extract the raw mpi communicator.
-    Teuchos::RCP<const Teuchos::Comm<int>> comm =
-        Teuchos::DefaultComm<int>::getComm();
-    Teuchos::RCP<const Teuchos::MpiComm<int>> mpi_comm =
-        Teuchos::rcp_dynamic_cast<const Teuchos::MpiComm<int>>( comm );
-    Teuchos::RCP<const Teuchos::OpaqueWrapper<MPI_Comm>> opaque_comm =
-        mpi_comm->getRawMpiComm();
-    MPI_Comm raw_comm = ( *opaque_comm )();
+	const std::string argv_string = "unit_test --keep-cout";
+	const char *argv_char = argv_string.c_str();
+	Teuchos::GlobalMPISession mpiSession(
+			&boost::unit_test::framework::master_test_suite().argc,
+			&boost::unit_test::framework::master_test_suite().argv);
+	auto comm = Teuchos::DefaultComm<int>::getComm();
+	auto mpi_comm = Teuchos::rcp_dynamic_cast<const Teuchos::MpiComm<int>>(
+			comm);
+	auto opaque_comm = mpi_comm->getRawMpiComm();
+	auto raw_comm = (*opaque_comm)();
 
     // Create the mesh.
     int space_dim = 3;
-    const std::string argv_string = "unit_test";
-    const char *argv_char = argv_string.c_str();
     libMesh::LibMeshInit libmesh_init( 1, &argv_char, raw_comm );
-    TEST_ASSERT( libMesh::initialized() );
-    TEST_EQUALITY( (int)libmesh_init.comm().rank(), comm->getRank() );
+    BOOST_VERIFY( libMesh::initialized() );
+    BOOST_VERIFY( (int)libmesh_init.comm().rank() == comm->getRank() );
     Teuchos::RCP<libMesh::Mesh> mesh =
         Teuchos::rcp( new libMesh::Mesh( libmesh_init.comm(), space_dim ) );
 
@@ -161,45 +163,45 @@ TEUCHOS_UNIT_TEST( LibmeshEntityIntegrationRule, hex_8_test )
     mesh->libmesh_assert_valid_parallel_ids();
 
     // Make an adjacency data structure.
-    DataTransferKit::LibmeshAdjacencies adjacencies( mesh );
+    LibmeshAdapter::LibmeshAdjacencies adjacencies( mesh );
 
     // Create a DTK entity for the hex.
-    DataTransferKit::Entity dtk_entity =
-        DataTransferKit::LibmeshEntity<libMesh::Elem>(
+    auto dtk_entity =
+        LibmeshAdapter::LibmeshEntity<libMesh::Elem>(
             Teuchos::ptr( hex_elem ), mesh.ptr(),
             Teuchos::ptrFromRef( adjacencies ) );
 
     // Create an integration rule.
-    Teuchos::RCP<DataTransferKit::EntityIntegrationRule> integration_rule =
-        Teuchos::rcp( new DataTransferKit::LibmeshEntityIntegrationRule() );
+   auto integration_rule =
+        Teuchos::rcp( new LibmeshAdapter::LibmeshEntityIntegrationRule() );
 
     // Test the integration rule.
     Teuchos::Array<Teuchos::Array<double>> p_1;
     Teuchos::Array<double> w_1;
     integration_rule->getIntegrationRule( dtk_entity, 1, p_1, w_1 );
-    TEST_EQUALITY( 1, w_1.size() );
-    TEST_EQUALITY( 1, p_1.size() );
-    TEST_EQUALITY( 3, p_1[0].size() );
-    TEST_EQUALITY( 8.0, w_1[0] );
-    TEST_EQUALITY( 0.0, p_1[0][0] );
-    TEST_EQUALITY( 0.0, p_1[0][1] );
-    TEST_EQUALITY( 0.0, p_1[0][2] );
+    BOOST_VERIFY( 1 == w_1.size() );
+    BOOST_VERIFY( 1 == p_1.size() );
+    BOOST_VERIFY( 3 == p_1[0].size() );
+    BOOST_VERIFY( 8.0 == w_1[0] );
+    BOOST_VERIFY( 0.0 == p_1[0][0] );
+    BOOST_VERIFY( 0.0 == p_1[0][1] );
+    BOOST_VERIFY( 0.0 == p_1[0][2] );
 
     Teuchos::Array<Teuchos::Array<double>> p_2;
     Teuchos::Array<double> w_2;
     integration_rule->getIntegrationRule( dtk_entity, 2, p_2, w_2 );
-    TEST_EQUALITY( 8, w_2.size() );
-    TEST_EQUALITY( 8, p_2.size() );
+    BOOST_VERIFY( 8 == w_2.size() );
+    BOOST_VERIFY( 8 == p_2.size() );
     for ( int i = 0; i < 8; ++i )
     {
-        TEST_EQUALITY( w_2[i], 1.0 );
-        TEST_EQUALITY( p_2[i].size(), 3 );
+    	BOOST_VERIFY( w_2[i] == 1.0 );
+    	BOOST_VERIFY( p_2[i].size() == 3 );
 
         for ( int d = 0; d < 3; ++d )
         {
-            TEST_FLOATING_EQUALITY( std::abs( p_2[i][d] ),
-                                    1.0 / std::sqrt( 3.0 ), 1.0e-15 );
-        }
+			BOOST_TEST(std::abs( p_2[i][d] ) == ( 1.0 / std::sqrt( 3.0 )),
+					boost::test_tools::tolerance(1.0e-15));
+		}
     }
 }
 

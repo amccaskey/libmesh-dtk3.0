@@ -41,8 +41,8 @@
 #define LIBMESHDTKADAPTERS_LIBMESHENTITYLOCALMAP_HPP
 
 #include "DTK_LibmeshEntityExtraData.hpp"
+#include "DTK_LibmeshHelpers.hpp"
 
-#include "DTK_EntityLocalMap.hpp"
 #include "DTK_DBC.hpp"
 
 #include <Teuchos_ArrayView.hpp>
@@ -51,6 +51,7 @@
 
 #include <libmesh/mesh_base.h>
 #include <libmesh/system.h>
+#include <libmesh/fe_interface.h>
 
 namespace LibmeshAdapter {
 //---------------------------------------------------------------------------//
@@ -106,24 +107,8 @@ public:
 	 */
 	template<typename LibmeshEntityT>
 	void centroid(const LibmeshEntityT &entity,
-			const Teuchos::ArrayView<double> &centroid) const {
-		libMesh::Point point;
+			const Teuchos::ArrayView<double> &centroid) const;
 
-		if (0 == entity.topologicalDimension()) {
-			Teuchos::Ptr<libMesh::Point> node = LibmeshHelpers::extractGeom<
-					libMesh::Node>(entity);
-			point = *node;
-		} else {
-			point =
-					LibmeshHelpers::extractGeom<libMesh::Elem>(entity)->centroid();
-		}
-
-		int space_dim = entity.physicalDimension();
-		for (int d = 0; d < space_dim; ++d) {
-			centroid[d] = point(d);
-		}
-
-	}
 
 	/*!
 	 * \brief (Safeguard the reverse map) Perform a safeguard check for
@@ -411,6 +396,37 @@ private:
 };
 
 //---------------------------------------------------------------------------//
+
+template<>
+void LibmeshEntityLocalMap::centroid(const LibmeshEntity<libMesh::Node> &entity,
+		const Teuchos::ArrayView<double> &centroid) const {
+
+	libMesh::Point point;
+
+	Teuchos::Ptr<libMesh::Point> node = LibmeshHelpers::extractGeom<
+			libMesh::Node>(entity);
+	point = *node;
+
+	int space_dim = entity.physicalDimension();
+	for (int d = 0; d < space_dim; ++d) {
+		centroid[d] = point(d);
+	}
+
+}
+template<>
+void LibmeshEntityLocalMap::centroid(const LibmeshEntity<libMesh::Elem> &entity,
+		const Teuchos::ArrayView<double> &centroid) const {
+
+	libMesh::Point point;
+
+	point = LibmeshHelpers::extractGeom<libMesh::Elem>(entity)->centroid();
+
+	int space_dim = entity.physicalDimension();
+	for (int d = 0; d < space_dim; ++d) {
+		centroid[d] = point(d);
+	}
+
+}
 
 }// end namespace LibmeshAdapter
 

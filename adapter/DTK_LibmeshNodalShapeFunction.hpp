@@ -43,15 +43,16 @@
 
 #include "DTK_LibmeshEntityExtraData.hpp"
 
-#include <DTK_EntityShapeFunction.hpp>
 #include <DTK_Types.hpp>
+#include "DTK_DBC.hpp"
 
 #include <Teuchos_Array.hpp>
 #include <Teuchos_RCP.hpp>
 
 #include <libmesh/mesh_base.h>
 #include <libmesh/system.h>
-
+#include <libmesh/fe_interface.h>
+#include <libmesh/fe_compute_data.h>
 namespace LibmeshAdapter
 {
 typedef unsigned long int SupportId;
@@ -90,27 +91,7 @@ class LibmeshNodalShapeFunction
      */
 	template<typename LibmeshEntityT>
     void entitySupportIds( const LibmeshEntityT &entity,
-                           Teuchos::Array<SupportId> &support_ids ) const {
-        // Node case.
-        if ( 0 == entity.topologicalDimension() )
-        {
-            DTK_CHECK( extractGeom<libMesh::Node>( entity )->valid_id() );
-            support_ids.assign( 1, extractGeom<libMesh::Node>( entity )->id() );
-        }
-
-        // Element case.
-        else
-        {
-            Teuchos::Ptr<libMesh::Elem> elem = extractGeom<libMesh::Elem>( entity );
-            int num_nodes = elem->n_nodes();
-            support_ids.resize( num_nodes );
-            for ( int n = 0; n < num_nodes; ++n )
-            {
-                DTK_CHECK( elem->get_node( n )->valid_id() );
-                support_ids[n] = elem->get_node( n )->id();
-            }
-        }
-    }
+                           Teuchos::Array<SupportId> &support_ids ) const;
 
     /*!
      * \brief Given an entity and a reference point, evaluate the shape
@@ -186,6 +167,28 @@ Teuchos::Ptr<LibmeshGeom> LibmeshNodalShapeFunction::extractGeom(
 }
 
 //---------------------------------------------------------------------------//
+
+template<>
+void LibmeshNodalShapeFunction::entitySupportIds(
+		const LibmeshEntity<libMesh::Node> &entity,
+		Teuchos::Array<SupportId> &support_ids) const {
+	// Node case.
+	DTK_CHECK(extractGeom<libMesh::Node>(entity)->valid_id());
+	support_ids.assign(1, extractGeom<libMesh::Node>(entity)->id());
+}
+
+template<>
+void LibmeshNodalShapeFunction::entitySupportIds(
+		const LibmeshEntity<libMesh::Elem> &entity,
+		Teuchos::Array<SupportId> &support_ids) const {
+	Teuchos::Ptr<libMesh::Elem> elem = extractGeom<libMesh::Elem>(entity);
+	int num_nodes = elem->n_nodes();
+	support_ids.resize(num_nodes);
+	for (int n = 0; n < num_nodes; ++n) {
+		DTK_CHECK(elem->get_node(n)->valid_id());
+		support_ids[n] = elem->get_node(n)->id();
+	}
+}
 
 } // end namespace LibmeshAdapter
 
