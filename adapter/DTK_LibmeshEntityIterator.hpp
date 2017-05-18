@@ -131,8 +131,8 @@ public:
 
    // Post-increment operator.
    virtual BaseIterType operator++( int ) {
-	   DTK_REQUIRE( b_iterator_impl );
-	   DTK_REQUIRE( *b_iterator_impl != b_iterator_impl->end() );
+//	   DTK_REQUIRE( b_iterator_impl );
+	   DTK_REQUIRE( *this != end() );
 
 	   const BaseIterType tmp( *this );
 	   increment();
@@ -156,29 +156,26 @@ public:
    virtual bool operator==( const BaseIterType &rhs ) const {
 	    const BaseIterType *rhs_it =
 	        static_cast<const BaseIterType *>( &rhs );
-	    const BaseIterType *rhs_it_impl =
-	        static_cast<const BaseIterType *>(
-	            rhs_it->b_iterator_impl.get() );
-	    return ( rhs_it_impl->d_libmesh_iterator == d_libmesh_iterator );
+//	    const BaseIterType *rhs_it_impl =
+//	        static_cast<const BaseIterType *>(
+//	            rhs_it->b_iterator_impl.get() );
+	    return ( rhs_it->d_libmesh_iterator == d_libmesh_iterator );
    }
 
    // Not equal comparison operator.
    virtual bool operator!=( const BaseIterType &rhs ) const {
 	    const BaseIterType *rhs_it =
 	        static_cast<const BaseIterType *>( &rhs );
-	    const BaseIterType *rhs_it_impl =
-	        static_cast<const BaseIterType *>(
-	            rhs_it->b_iterator_impl.get() );
-	    return ( rhs_it_impl->d_libmesh_iterator != d_libmesh_iterator );
+//	    const BaseIterType *rhs_it_impl =
+//	        static_cast<const BaseIterType *>(
+//	            rhs_it->b_iterator_impl.get() );
+	    return ( rhs_it->d_libmesh_iterator != d_libmesh_iterator );
    }
 
    // Number of elements in the iterator that meet the predicate criteria.
    std::size_t size() const {
 	   std::size_t size = 0;
-	    if ( b_iterator_impl )
-	    {
-	        size = std::distance( this->begin(), this->end() );
-	    }
+        size = std::distance( this->begin(), this->end() );
 	    return size;
    }
 
@@ -200,7 +197,7 @@ public:
 
  protected:
    // Implementation.
-   std::unique_ptr<BaseIterType> b_iterator_impl;
+//   std::unique_ptr<BaseIterType> b_iterator_impl;
 
    // Predicate.
    PredicateFunction b_predicate;
@@ -238,8 +235,8 @@ public:
    // Advance the iterator to the first valid element that satisfies the
    // predicate or the end of the iterator.
    void advanceToFirstValidElement() {
-	    DTK_REQUIRE( b_iterator_impl );
-	    if ( ( *this != end() ) && !b_predicate( **this ) )
+//	    DTK_REQUIRE( b_iterator_impl );
+	    if ( ( *this != end() )) // && !b_predicate( **this ) )
 	    {
 	        increment();
 	    }
@@ -248,21 +245,21 @@ public:
    // Increment the iterator implementation forward until either a valid
    // increment is found or we have reached the end.
    void increment() {
-	    DTK_REQUIRE( b_iterator_impl );
-	    DTK_REQUIRE( *b_iterator_impl != b_iterator_impl->end() );
+//	    DTK_REQUIRE( b_iterator_impl );
+	    DTK_REQUIRE( *this != end() );
 
 	    // Apply the increment operator.
-	    BaseIterType &it = b_iterator_impl->operator++();
+	    BaseIterType &it = operator++();
 
 	    // Get the end of the range.
-	    BaseIterType end = b_iterator_impl->end();
+	    BaseIterType e = end();
 
 	    // If the we are not at the end or the predicate is not satisfied by the
 	    // current element, increment until either of these conditions is
 	    // satisfied.
-	    while ( it != end && !b_predicate( *it ) )
+	    while ( it != e && !b_predicate( *it ) )
 	    {
-	        it = b_iterator_impl->operator++();
+	        it = operator++();
 	    }
 
    }
