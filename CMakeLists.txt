@@ -19,12 +19,9 @@ endif()
 enable_testing()
 
 include_directories(${MPI_INCLUDE_PATH})
-
 include_directories(${DTK_TRILINOS_ROOT}/include)
-
 include_directories(${Boost_INCLUDE_DIRS})
-
 include_directories(${Libmesh_INCLUDE_DIRS})
 
 add_subdirectory(adapter)
-#add_subdirectory(userapp)
+add_subdirectory(userapp)

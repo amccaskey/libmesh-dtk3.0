@@ -46,40 +46,56 @@ namespace LibmeshApp {
 void nodeListSize(std::shared_ptr<void> user_data, unsigned &space_dim,
 		size_t &local_num_nodes, bool &has_ghosts) {
 
+	// Get the LibmeshManager instance
 	auto u = std::static_pointer_cast<LibmeshAdapter::LibmeshManager>(
 			user_data);
 
+	// Create Predicates to pick out all nodes and local nodes
 	auto thisRank = u->entitySet()->communicator()->getRank();
 	LibmeshAdapter::NodePredicateFunction localPredicate =
 			[=]( LibmeshAdapter::LibmeshEntity<libMesh::Node> e) {return e.ownerRank() == thisRank;};
 	LibmeshAdapter::NodePredicateFunction totalPredicate =
 			[=]( LibmeshAdapter::LibmeshEntity<libMesh::Node> e) {return true;};
+
+	// Get the Entity Set
 	auto entitySet = u->entitySet();
 
+	// Create Iterators over all local nodes and all nodes
 	auto localNodeIter = entitySet->entityIterator(localPredicate);
 	auto totalNodeIter = entitySet->entityIterator(totalPredicate);
 
+	// Set the total number of local nodes
 	local_num_nodes = localNodeIter.size();
+
+	// Set the spacial dimension
 	space_dim = entitySet->physicalDimension();
+
+	// Indicate if we have ghosted nodes
 	has_ghosts = totalNodeIter.size() != local_num_nodes;
 }
 
 void nodeListData(std::shared_ptr<void> user_data,
 		DataTransferKit::View<DataTransferKit::Coordinate> coordinates,
 		DataTransferKit::View<bool> is_ghost_node) {
+
+	// Get the LibmeshManager instance
 	auto u = std::static_pointer_cast<LibmeshAdapter::LibmeshManager>(user_data);
 
 	// Get the EntitySet
 	auto entitySet = u->entitySet();
 
+	// Get the spacial dimenstion
 	auto dim = entitySet->physicalDimension();
 
+	// Create a predicate that picks out only local nodes
 	auto thisRank = u->entitySet()->communicator()->getRank();
 	LibmeshAdapter::NodePredicateFunction localPredicate =
 			[=]( LibmeshAdapter::LibmeshEntity<libMesh::Node> e) {return e.ownerRank() == thisRank;};
 
+	// Create the entity iterator over those local nodes
 	auto localNodeIter = entitySet->entityIterator(localPredicate);
 
+	// Loop over all nodes and set their spatial coordinates
 	unsigned num_nodes = localNodeIter.size();
 	unsigned counter = 0;
 	auto startNode = localNodeIter.begin();
@@ -92,9 +108,35 @@ void nodeListData(std::shared_ptr<void> user_data,
 			coordinates[num_nodes * d + counter] =
 					libmeshNode->d_libmesh_geom->operator()(d);
 		}
+
 		counter++;
 	}
 }
+
+void pullFieldData( std::shared_ptr<void> user_data,
+                    DataTransferKit::View<double> field_dofs )
+{
+    auto u = std::static_pointer_cast<LibmeshAdapter::LibmeshManager>(
+        user_data );
+
+	// Get the EntitySet
+	auto entitySet = u->entitySet();
+
+	// Get the spacial dimenstion
+	auto space_dim = entitySet->physicalDimension();
+	// Create a predicate that picks out only local nodes
+	auto thisRank = u->entitySet()->communicator()->getRank();
+	LibmeshAdapter::NodePredicateFunction localPredicate =
+			[=]( LibmeshAdapter::LibmeshEntity<libMesh::Node> e) {return e.ownerRank() == thisRank;};
+
+	// Create the entity iterator over those local nodes
+	auto localNodeIter = entitySet->entityIterator(localPredicate);
+
+	// Loop over all nodes and set their spatial coordinates
+	unsigned num_nodes = localNodeIter.size();
+
+}
+
 }
 
 #endif

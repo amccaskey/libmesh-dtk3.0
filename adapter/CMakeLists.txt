@@ -4,7 +4,7 @@ set (LIBRARY_NAME libmesh-adapter)
 
 file (GLOB HEADERS *.hpp)
 
-include_directories(${CMAKE_SOURCE_DIR})
+include_directories(${CMAKE_CURRENT_SOURCE_DIR})
 
 install(FILES ${HEADERS} DESTINATION include)
 
