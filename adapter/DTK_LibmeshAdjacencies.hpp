@@ -99,13 +99,13 @@ public:
 			Teuchos::Array<Teuchos::Ptr<ToGeomType>> &adjacent_entities) const;
 
 	// Given a node global id get its pointer.
-	libMesh::Node *getNodeById(const DataTransferKit::EntityId id) const {
+	libMesh::Node *getNodeById(const unsigned long int id) const {
 		DTK_REQUIRE(d_node_id_map.count(id));
 		return d_node_id_map.find(id)->second;
 	}
 
 	// Given a elem global id get its pointer.
-	libMesh::Elem *getElemById(const DataTransferKit::EntityId id) const {
+	libMesh::Elem *getElemById(const unsigned long int id) const {
 		DTK_REQUIRE(d_elem_id_map.count(id));
 		return d_elem_id_map.find(id)->second;
 	}
@@ -118,10 +118,10 @@ private:
 	std::unordered_multimap<libMesh::Node *, libMesh::Elem *> d_node_to_elem_map;
 
 	// Id-to-node map.
-	std::unordered_map<DataTransferKit::EntityId, libMesh::Node *> d_node_id_map;
+	std::unordered_map<unsigned long int, libMesh::Node *> d_node_id_map;
 
 	// Id-to-elem map.
-	std::unordered_map<DataTransferKit::EntityId, libMesh::Elem *> d_elem_id_map;
+	std::unordered_map<unsigned long int, libMesh::Elem *> d_elem_id_map;
 };
 
 //---------------------------------------------------------------------------//

@@ -79,7 +79,7 @@ public:
 	 * \brief Constructor.
 	 */
 	LibmeshEntitySet(const Teuchos::RCP<libMesh::MeshBase> &libmesh_mesh) :
-			d_libmesh_mesh(libmesh_mesh) {
+			d_libmesh_mesh(libmesh_mesh), d_adjacencies(new LibmeshAdjacencies(libmesh_mesh)) {
 
 	}
 

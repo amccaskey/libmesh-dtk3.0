@@ -192,6 +192,7 @@ BOOST_AUTO_TEST_CASE( checkLibmeshEntitySet )
     // Check libmesh validity.
     mesh->libmesh_assert_valid_parallel_ids();
 
+
     // Create an entity set.
     auto entity_set =
         Teuchos::rcp( new LibmeshAdapter::LibmeshEntitySet( mesh ) );
@@ -266,6 +267,7 @@ BOOST_AUTO_TEST_CASE( checkLibmeshEntitySet )
     LibmeshAdapter::LibmeshEntity<libMesh::Elem> set_hex;
     entity_set->getEntity( hex_elem->id(), set_hex );
     BOOST_VERIFY( set_hex.id() == hex_elem->id() );
+
     for ( unsigned i = 0; i < num_nodes; ++i )
     {
     	LibmeshAdapter::LibmeshEntity<libMesh::Node> set_node;
@@ -294,6 +296,7 @@ BOOST_AUTO_TEST_CASE( checkLibmeshEntitySet )
         BOOST_VERIFY( 1 == node_adjacent_volumes.size() );
         BOOST_VERIFY( node_adjacent_volumes[0].id() == hex_elem->id() );
     }
+
 }
 
 //---------------------------------------------------------------------------//

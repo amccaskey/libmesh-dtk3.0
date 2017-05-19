@@ -41,180 +41,21 @@
 #define BOOST_TEST_MODULE LibmeshUserAppTester
 
 #include <boost/test/included/unit_test.hpp>
-
-#include <DTK_UserApplication.hpp>
-#include <DTK_UserDataInterface.hpp>
-#include <DTK_UserFunctionRegistry.hpp>
-#include <DTK_View.hpp>
-
-#include <DTK_LibmeshManager.hpp>
-#include <DTK_LibmeshEntity.hpp>
-#include <DTK_LibmeshEntityExtraData.hpp>
-#include <DTK_LibmeshEntityIterator.hpp>
-#include <DTK_BasicEntityPredicates.hpp>
-
-#include <libmesh/dof_map.h>
-#include <libmesh/elem.h>
-#include <libmesh/equation_systems.h>
-#include <libmesh/exodusII_io.h>
-#include <libmesh/explicit_system.h>
-#include <libmesh/fe.h>
-#include <libmesh/libmesh.h>
-#include <libmesh/mesh.h>
-#include <libmesh/node.h>
-#include <libmesh/numeric_vector.h>
-#include <libmesh/parallel.h>
-#include <libmesh/quadrature_gauss.h>
-#include <libmesh/system.h>
-#include <libmesh/mesh_generation.h>
-
-#include <Kokkos_Core.hpp>
-
-#include <Teuchos_Array.hpp>
-#include <Teuchos_DefaultComm.hpp>
-#include <Teuchos_DefaultMpiComm.hpp>
-#include <Teuchos_FancyOStream.hpp>
-#include <Teuchos_OpaqueWrapper.hpp>
-#include <Teuchos_RCP.hpp>
-#include <Teuchos_Tuple.hpp>
-#include <Teuchos_UnitTestHarness.hpp>
-#include <Teuchos_VerboseObject.hpp>
-#include <Teuchos_XMLParameterListCoreHelpers.hpp>
-#include <Teuchos_ScalarTraits.hpp>
-#include <Teuchos_UnitTestHarness.hpp>
-
-#include <memory>
-
-namespace LibmeshAppTest {
-
-
-//---------------------------------------------------------------------------//
-// User functions.
-//---------------------------------------------------------------------------//
-// Get the size parameters for building a node list.
-void nodeListSize(std::shared_ptr<void> user_data, unsigned &space_dim,
-		size_t &local_num_nodes, bool &has_ghosts) {
-
-	// Get as a LibmeshManager
-	auto u = std::static_pointer_cast<DataTransferKit::LibmeshManager>(user_data);
-
-	DataTransferKit::LocalEntityPredicate localPredicate(
-			u->entitySet()->communicator()->getRank());
-
-	// Get the EntitySet
-	auto entitySet = u->entitySet();
-
-	// Create entity iterators over all nodes and locally owned nodes
-	auto localNodeIter = entitySet->entityIterator(0, localPredicate);
-	auto totalNodeIter = entitySet->entityIterator(0);
-
-	// Set the values DTK needs from this function
-	local_num_nodes = localNodeIter.size();
-	space_dim = entitySet->physicalDimension();
-	has_ghosts = totalNodeIter.size() != local_num_nodes;
-}
-
-//---------------------------------------------------------------------------//
-// Get the data for a node list.
-void nodeListData(std::shared_ptr<void> user_data,
-		DataTransferKit::View<DataTransferKit::Coordinate> coordinates,
-		DataTransferKit::View<bool> is_ghost_node) {
-	auto u = std::static_pointer_cast<DataTransferKit::LibmeshManager>(user_data);
-
-	// Get the EntitySet
-	auto entitySet = u->entitySet();
-
-	auto dim = entitySet->physicalDimension();
-
-	DataTransferKit::LocalEntityPredicate localPredicate(
-				entitySet->communicator()->getRank());
-
-	auto localNodeIter =
-			entitySet->entityIterator(0,localPredicate);
-
-	unsigned num_nodes = entitySet->entityIterator(0).size();
-	unsigned counter = 0;
-	auto startNode = localNodeIter.begin();
-	auto endNode = localNodeIter.end();
-	for (auto node = startNode; node != endNode; ++node) {
-//		Teuchos::Tuple<double, 6> bounds;
-//		node->boundingBox(bounds);
-//		for (unsigned d = 0; d < dim; ++d) {
-//			coordinates[num_nodes*d + counter] = bounds[d];
-//		}
-		auto libmeshNode = Teuchos::rcp_dynamic_cast<
-				DataTransferKit::LibmeshEntityExtraData<libMesh::Node>>(
-				node->extraData());
-		for (unsigned d = 0; d < dim; ++d) {
-			coordinates[num_nodes * d + counter] =
-					libmeshNode->d_libmesh_geom->operator()(d);
-		}
-		counter++;
-	}
-}
-
-//---------------------------------------------------------------------------//
-// Get the size parameters for building a bounding volume list.
-template <class Scalar, class ExecutionSpace>
-void boundingVolumeListSize( std::shared_ptr<void> user_data,
-                             unsigned &space_dim, size_t &local_num_volumes,
-                             bool &has_ghosts )
-{
-    auto u = std::static_pointer_cast<libMesh::Mesh>(
-        user_data );
-
-    space_dim = u->mesh_dimension();
-//    local_num_volumes = u->_size_1;
-    has_ghosts = false;
-}
-
-//---------------------------------------------------------------------------//
-// Get the data for a bounding volume list.
-template <class Scalar, class ExecutionSpace>
-void boundingVolumeListData(
-    std::shared_ptr<void> user_data,
-    DataTransferKit::View<DataTransferKit::Coordinate> bounding_volumes,
-    DataTransferKit::View<bool> is_ghost_volume )
-{
-//    auto u = std::static_pointer_cast<libMesh::Mesh>(
-//        user_data );
-//
-//    // The lambda does not properly capture class data so extract it.
-//    unsigned space_dim = u->mesh_dimension();
-//	auto num_nodes = u->n_local_nodes();
-//    unsigned size_1 = 0;
-//    unsigned offset = 0;
-//
-//    auto fill = KOKKOS_LAMBDA( const size_t v )
-//    {
-//        for ( unsigned d = 0; d < space_dim; ++d )
-//        {
-//            for ( unsigned h = 0; h < 2; ++h )
-//            {
-//                unsigned index = size_1 * space_dim * h + size_1 * d + v;
-//                bounding_volumes[index] = v + d + h + offset;
-//            }
-//        }
-//        is_ghost_volume[v] = true;
-//    };
-//    Kokkos::parallel_for( Kokkos::RangePolicy<ExecutionSpace>( 0, size_1 ),
-//                          fill );
-//    Kokkos::fence();
-}
-
-//---------------------------------------------------------------------------//
-
-}
+#include <LibmeshUserApplication.hpp>
 
 struct TestFixture {
-	static TestFixture*& instance() {static TestFixture* inst = 0; return inst;}
+	static TestFixture*& instance() {
+		static TestFixture* inst = 0;
+		return inst;
+	}
 	TestFixture() {
 		BOOST_TEST_MESSAGE("setup fixture");
 		instance() = this;
 		const std::string argv_string = "unit_test";
 		const char *argv_char = argv_string.c_str();
-		 Teuchos::GlobalMPISession mpiSession(&boost::unit_test::framework::master_test_suite().argc,
-				 &boost::unit_test::framework::master_test_suite().argv);
+		Teuchos::GlobalMPISession mpiSession(
+				&boost::unit_test::framework::master_test_suite().argc,
+				&boost::unit_test::framework::master_test_suite().argv);
 		auto comm = Teuchos::DefaultComm<int>::getComm();
 		auto mpi_comm = Teuchos::rcp_dynamic_cast<const Teuchos::MpiComm<int>>(
 				comm);
@@ -223,16 +64,17 @@ struct TestFixture {
 
 		// Create the mesh.
 		BOOST_VERIFY(!libMesh::initialized());
-		libMesh::LibMeshInit libmesh_init(boost::unit_test::framework::master_test_suite().argc,
-				 boost::unit_test::framework::master_test_suite().argv, raw_comm);
+		libMesh::LibMeshInit libmesh_init(
+				boost::unit_test::framework::master_test_suite().argc,
+				boost::unit_test::framework::master_test_suite().argv,
+				raw_comm);
 		BOOST_VERIFY(libMesh::initialized());
-		BOOST_VERIFY((int)libmesh_init.comm().rank() == comm->getRank());
+		BOOST_VERIFY((int )libmesh_init.comm().rank() == comm->getRank());
 		auto mesh = std::make_shared<libMesh::Mesh>(libmesh_init.comm());
-		libMesh::MeshTools::Generation::build_cube(*mesh.get(), 4, 4, 4, 0.0, 1.0,
-				0.0, 1.0, 0.0, 1.0, libMesh::HEX8);
+		libMesh::MeshTools::Generation::build_cube(*mesh.get(), 4, 4, 4, 0.0,
+				1.0, 0.0, 1.0, 0.0, 1.0, libMesh::HEX8);
 
-
-		 // Make a libmesh system. We will put a first order linear basis on the
+		// Make a libmesh system. We will put a first order linear basis on the
 		// elements for all subdomains.
 		std::string var_name = "test_var";
 		libMesh::EquationSystems equation_systems(*mesh.get());
@@ -260,8 +102,10 @@ struct TestFixture {
 		// Set the user functions.
 		registry = std::make_shared<
 				DataTransferKit::UserFunctionRegistry<double>>();
-		registry->setNodeListSizeFunction(LibmeshAppTest::nodeListSize, libmeshManager);
-		registry->setNodeListDataFunction(LibmeshAppTest::nodeListData, libmeshManager);
+		registry->setNodeListSizeFunction(LibmeshAppTest::nodeListSize,
+				libmeshManager);
+		registry->setNodeListDataFunction(LibmeshAppTest::nodeListData,
+				libmeshManager);
 
 		BOOST_VERIFY(mesh);
 		BOOST_VERIFY(mesh->n_local_nodes() == 125);
@@ -271,8 +115,7 @@ struct TestFixture {
 	}
 
 	std::shared_ptr<DataTransferKit::LibmeshManager> libmeshManager;
-	std::shared_ptr<
-			DataTransferKit::UserFunctionRegistry<double>> registry;
+	std::shared_ptr<DataTransferKit::UserFunctionRegistry<double>> registry;
 
 };
 
@@ -331,10 +174,10 @@ BOOST_AUTO_TEST_CASE(checkNodeList) {
 	unsigned counter = 0;
 	for (unsigned i = 0; i < nNodes; ++i) {
 		for (unsigned d = 0; d < dim; ++d) {
-			BOOST_VERIFY(node_list.coordinates(i, d) == expectedCoords[counter]);
+			BOOST_VERIFY(
+					node_list.coordinates(i, d) == expectedCoords[counter]);
 			counter++;
 		}
 	}
 }
-
 //BOOST_AUTO_TEST_SUITE_END()
