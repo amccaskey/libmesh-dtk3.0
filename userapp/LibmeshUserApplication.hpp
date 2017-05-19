@@ -113,29 +113,195 @@ void nodeListData(std::shared_ptr<void> user_data,
 	}
 }
 
-void pullFieldData( std::shared_ptr<void> user_data,
-                    DataTransferKit::View<double> field_dofs )
-{
-    auto u = std::static_pointer_cast<LibmeshAdapter::LibmeshManager>(
-        user_data );
-
-	// Get the EntitySet
-	auto entitySet = u->entitySet();
-
-	// Get the spacial dimenstion
-	auto space_dim = entitySet->physicalDimension();
-	// Create a predicate that picks out only local nodes
-	auto thisRank = u->entitySet()->communicator()->getRank();
-	LibmeshAdapter::NodePredicateFunction localPredicate =
-			[=]( LibmeshAdapter::LibmeshEntity<libMesh::Node> e) {return e.ownerRank() == thisRank;};
-
-	// Create the entity iterator over those local nodes
-	auto localNodeIter = entitySet->entityIterator(localPredicate);
-
-	// Loop over all nodes and set their spatial coordinates
-	unsigned num_nodes = localNodeIter.size();
+void boundingVolumeListSize( std::shared_ptr<void> user_data, unsigned &space_dim,
+                        size_t &local_num_volumes, bool &has_ghosts ) {
 
 }
+
+//---------------------------------------------------------------------------//
+/*
+ * \brief Get the data for a bounding volume list.
+ */
+void boundingVolumeData(
+    std::shared_ptr<void> user_data, DataTransferKit::View<DataTransferKit::Coordinate> bounding_volumes,
+	DataTransferKit::View<bool> is_ghost_volume ) {
+
+}
+
+//---------------------------------------------------------------------------//
+/*!
+ * \brief Get the size parameters for building a polyhedron list.
+ */
+void polyhedronListSizeFunction( std::shared_ptr<void> user_data, unsigned &space_dim,
+                        size_t &local_num_nodes, size_t &local_num_faces,
+                        size_t &total_nodes_per_face, size_t &local_num_cells,
+                        size_t &total_faces_per_cell, bool &has_ghosts ) {
+
+}
+
+//---------------------------------------------------------------------------//
+/*!
+ * \brief Get the data for a polyhedron list.
+ */
+void polyhedronListDataFunction(
+    std::shared_ptr<void> user_data, DataTransferKit::View<DataTransferKit::Coordinate> coordinates,
+	DataTransferKit::View<DataTransferKit::LocalOrdinal> faces, DataTransferKit::View<unsigned> nodes_per_face,
+	DataTransferKit::View<DataTransferKit::LocalOrdinal> cells, DataTransferKit::View<unsigned> faces_per_cell,
+	DataTransferKit::View<int> face_orientation, DataTransferKit::View<bool> is_ghost_cell ) {
+
+}
+
+//---------------------------------------------------------------------------//
+/*!
+ * \brief Get the size parameters for building a cell list with a single
+ * topology.
+ */
+void cellListSizeFunction( std::shared_ptr<void> user_data, unsigned &space_dim,
+                        size_t &local_num_nodes, size_t &local_num_cells,
+                        unsigned &nodes_per_cell, bool &has_ghosts ) {
+
+}
+
+//---------------------------------------------------------------------------//
+/*!
+ * \brief Get the data for a single topology cell list.
+ */
+void cellListDataFunction( std::shared_ptr<void> user_data,
+		DataTransferKit::View<DataTransferKit::Coordinate> coordinates, DataTransferKit::View<DataTransferKit::LocalOrdinal> cells,
+		DataTransferKit::View<bool> is_ghost_cell, std::string &cell_topology ) {
+
+}
+
+//---------------------------------------------------------------------------//
+/*!
+ * \brief Get the size parameters for building a cell list with mixed
+ * topologies.
+ */
+void mixedTopologyCellListSizeFunction( std::shared_ptr<void> user_data, unsigned &space_dim,
+                        size_t &local_num_nodes, size_t &local_num_cells,
+                        size_t &total_nodes_per_cell, bool &has_ghosts ) {
+
+}
+
+//---------------------------------------------------------------------------//
+/*!
+ * \brief Get the data for a mixed topology cell list.
+ */
+void mixedTopologyCellListDataFunction(
+    std::shared_ptr<void> user_data, DataTransferKit::View<DataTransferKit::Coordinate> coordinates,
+	DataTransferKit::View<DataTransferKit::LocalOrdinal> cells, DataTransferKit::View<unsigned> cell_topology_ids,
+	DataTransferKit::View<bool> is_ghost_cell, std::vector<std::string> &cell_topologies ) {
+
+}
+
+//---------------------------------------------------------------------------//
+/*!
+ * \brief Get the size parameters for a boundary.
+ */
+void boundarySizeFunctio(
+    std::shared_ptr<void> user_data, size_t &local_num_faces ) {
+
+}
+
+//---------------------------------------------------------------------------//
+/*!
+ * \brief Get the data for a boundary.
+ */
+void boundaryDataFunction(
+    std::shared_ptr<void> user_data, DataTransferKit::View<DataTransferKit::LocalOrdinal> boundary_cells,
+	DataTransferKit::View<unsigned> cell_faces_on_boundary ) {
+
+}
+
+//---------------------------------------------------------------------------//
+// Degree-of-freedom interface.
+//---------------------------------------------------------------------------//
+/*!
+ * \brief Get the size parameters for a degree-of-freedom id map with a single
+ * number of dofs per object.
+ */
+void dofMapSizeFunction( std::shared_ptr<void> user_data, size_t &local_num_dofs,
+                        size_t &local_num_objects, unsigned &dofs_per_object ) {
+
+}
+
+//---------------------------------------------------------------------------//
+/*!
+ * \brief Get the data for a degree-of-freedom id map with a single number of
+ * dofs per object.
+ */
+void dofMapDataFunction(
+    std::shared_ptr<void> user_data, DataTransferKit::View<DataTransferKit::GlobalOrdinal> global_dof_ids,
+	DataTransferKit::View<DataTransferKit::LocalOrdinal> object_dof_ids, std::string &discretization_type ) {
+
+}
+
+//---------------------------------------------------------------------------//
+/*!
+ * \brief Get the size parameters for a degree-of-freedom id map with each
+ * object having a potentially different number of dofs (e.g. mixed topology
+ * cell lists or polyhedron lists).
+ */
+void mixedTopologyDOFMapSizeFunctio(
+    std::shared_ptr<void> user_data, size_t &local_num_dofs,
+    size_t &local_num_objects, size_t &total_dofs_per_object ) {
+
+}
+
+//---------------------------------------------------------------------------//
+/*!
+ * \brief Get the data for a multiple object degree-of-freedom id map
+ * (e.g. mixed topology cell lists or polyhedron lists).
+ */
+void mixedTopologyDOFMapDataFunction(
+    std::shared_ptr<void> user_data, DataTransferKit::View<DataTransferKit::GlobalOrdinal> global_dof_ids,
+	DataTransferKit::View<DataTransferKit::LocalOrdinal> object_dof_ids, DataTransferKit::View<unsigned> dofs_per_object,
+    std::string &discretization_type ) {
+
+}
+
+//---------------------------------------------------------------------------//
+/*!
+ * \brief Get the size parameters for a field. Field must be of size
+ * local_num_dofs in the associated dof_id_map.
+ */
+template <class Scalar>
+void fieldSizeFunction( std::shared_ptr<void> user_data,
+                        unsigned &field_dimension, size_t &local_num_dofs ) {
+
+}
+
+//---------------------------------------------------------------------------//
+/*!
+ * \brief Pull data from application into a field.
+ */
+template <class Scalar>
+void pullFieldDataFunction(
+    std::shared_ptr<void> user_data, DataTransferKit::View<Scalar> field_dofs ) {
+
+}
+
+//---------------------------------------------------------------------------//
+/*
+ * \brief Push data from a field into the application.
+ */
+template <class Scalar>
+void pushFieldDataFunction(
+    std::shared_ptr<void> user_data, const DataTransferKit::View<Scalar> field_dofs ) {
+
+}
+
+//---------------------------------------------------------------------------//
+/*
+ * \brief Evaluate a field at a given set of points in a given set of objects.
+ */
+template <class Scalar>
+void evaluateFieldFunction(
+    std::shared_ptr<void> user_data, const DataTransferKit::View<DataTransferKit::Coordinate> evaluation_points,
+    const DataTransferKit::View<DataTransferKit::LocalOrdinal> object_ids, DataTransferKit::View<Scalar> values ) {
+
+}
+
 
 }
 
