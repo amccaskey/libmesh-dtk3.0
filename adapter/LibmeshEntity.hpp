@@ -1,13 +1,13 @@
 #ifndef LIBMESHDTKADAPTERS_LIBMESHENTITY_HPP
 #define LIBMESHDTKADAPTERS_LIBMESHENTITY_HPP
 
-#include "DTK_LibmeshAdjacencies.hpp"
-#include <DTK_Types.hpp>
+#include "LibmeshAdjacencies.hpp"
+#include <Types.hpp>
 #include <Teuchos_Ptr.hpp>
 #include <libmesh/mesh_base.h>
 
-#include "DTK_LibmeshEntityExtraData.hpp"
-#include "DTK_LibmeshEntityImpl.hpp"
+#include "LibmeshEntityExtraData.hpp"
+#include "LibmeshEntityImpl.hpp"
 
 #include <memory>
 

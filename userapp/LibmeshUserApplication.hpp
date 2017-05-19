@@ -6,11 +6,11 @@
 #include <DTK_UserFunctionRegistry.hpp>
 #include <DTK_View.hpp>
 
-#include <DTK_LibmeshManager.hpp>
-#include <DTK_LibmeshEntity.hpp>
-#include <DTK_LibmeshEntitySet.hpp>
-#include <DTK_LibmeshEntityExtraData.hpp>
-#include <DTK_LibmeshEntityIterator.hpp>
+#include <LibmeshManager.hpp>
+#include <LibmeshEntity.hpp>
+#include <LibmeshEntitySet.hpp>
+#include <LibmeshEntityExtraData.hpp>
+#include <LibmeshEntityIterator.hpp>
 
 #include <libmesh/dof_map.h>
 #include <libmesh/elem.h>
