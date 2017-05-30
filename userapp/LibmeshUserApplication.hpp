@@ -42,6 +42,8 @@
 
 #include <memory>
 
+// nodes, elems, and fields give us 3 things - point cloud transfer, finite element interpolation
+
 namespace LibmeshApp {
 void nodeListSize(std::shared_ptr<void> user_data, unsigned &space_dim,
 		size_t &local_num_nodes, bool &has_ghosts) {
@@ -113,25 +115,19 @@ void nodeListData(std::shared_ptr<void> user_data,
 	}
 }
 
+// DONT REALLY NEED THIS
 void boundingVolumeListSize( std::shared_ptr<void> user_data, unsigned &space_dim,
                         size_t &local_num_volumes, bool &has_ghosts ) {
+}
+
+// DONT REALLY NEED THIS
+void boundingVolumeData(std::shared_ptr<void> user_data,
+		DataTransferKit::View<DataTransferKit::Coordinate> bounding_volumes,
+		DataTransferKit::View<bool> is_ghost_volume) {
 
 }
 
-//---------------------------------------------------------------------------//
-/*
- * \brief Get the data for a bounding volume list.
- */
-void boundingVolumeData(
-    std::shared_ptr<void> user_data, DataTransferKit::View<DataTransferKit::Coordinate> bounding_volumes,
-	DataTransferKit::View<bool> is_ghost_volume ) {
-
-}
-
-//---------------------------------------------------------------------------//
-/*!
- * \brief Get the size parameters for building a polyhedron list.
- */
+// DONT REALLY NEED THIS
 void polyhedronListSizeFunction( std::shared_ptr<void> user_data, unsigned &space_dim,
                         size_t &local_num_nodes, size_t &local_num_faces,
                         size_t &total_nodes_per_face, size_t &local_num_cells,
@@ -139,10 +135,7 @@ void polyhedronListSizeFunction( std::shared_ptr<void> user_data, unsigned &spac
 
 }
 
-//---------------------------------------------------------------------------//
-/*!
- * \brief Get the data for a polyhedron list.
- */
+// DONT REALLY NEED THIS
 void polyhedronListDataFunction(
     std::shared_ptr<void> user_data, DataTransferKit::View<DataTransferKit::Coordinate> coordinates,
 	DataTransferKit::View<DataTransferKit::LocalOrdinal> faces, DataTransferKit::View<unsigned> nodes_per_face,
@@ -151,11 +144,7 @@ void polyhedronListDataFunction(
 
 }
 
-//---------------------------------------------------------------------------//
-/*!
- * \brief Get the size parameters for building a cell list with a single
- * topology.
- */
+// CELLS ARE Elements. list of cells that all have same topology.
 void cellListSizeFunction( std::shared_ptr<void> user_data, unsigned &space_dim,
                         size_t &local_num_nodes, size_t &local_num_cells,
                         unsigned &nodes_per_cell, bool &has_ghosts ) {
@@ -170,6 +159,7 @@ void cellListDataFunction( std::shared_ptr<void> user_data,
 		DataTransferKit::View<DataTransferKit::Coordinate> coordinates, DataTransferKit::View<DataTransferKit::LocalOrdinal> cells,
 		DataTransferKit::View<bool> is_ghost_cell, std::string &cell_topology ) {
 
+	// coordinates are the coords of the cells' nodes.
 }
 
 //---------------------------------------------------------------------------//
@@ -198,7 +188,7 @@ void mixedTopologyCellListDataFunction(
 /*!
  * \brief Get the size parameters for a boundary.
  */
-void boundarySizeFunctio(
+void boundarySizeFunction(
     std::shared_ptr<void> user_data, size_t &local_num_faces ) {
 
 }
@@ -223,6 +213,9 @@ void boundaryDataFunction(
 void dofMapSizeFunction( std::shared_ptr<void> user_data, size_t &local_num_dofs,
                         size_t &local_num_objects, unsigned &dofs_per_object ) {
 
+	// local_num_dofs would be total number of degrees of freedom
+	// local num objects is number of cells in FEM case (elements)
+	// dofs per object is 8 for Hex8
 }
 
 //---------------------------------------------------------------------------//
@@ -242,7 +235,7 @@ void dofMapDataFunction(
  * object having a potentially different number of dofs (e.g. mixed topology
  * cell lists or polyhedron lists).
  */
-void mixedTopologyDOFMapSizeFunctio(
+void mixedTopologyDOFMapSizeFunction(
     std::shared_ptr<void> user_data, size_t &local_num_dofs,
     size_t &local_num_objects, size_t &total_dofs_per_object ) {
 
@@ -253,10 +246,11 @@ void mixedTopologyDOFMapSizeFunctio(
  * \brief Get the data for a multiple object degree-of-freedom id map
  * (e.g. mixed topology cell lists or polyhedron lists).
  */
-void mixedTopologyDOFMapDataFunction(
-    std::shared_ptr<void> user_data, DataTransferKit::View<DataTransferKit::GlobalOrdinal> global_dof_ids,
-	DataTransferKit::View<DataTransferKit::LocalOrdinal> object_dof_ids, DataTransferKit::View<unsigned> dofs_per_object,
-    std::string &discretization_type ) {
+void mixedTopologyDOFMapDataFunction(std::shared_ptr<void> user_data,
+		DataTransferKit::View<DataTransferKit::GlobalOrdinal> global_dof_ids,
+		DataTransferKit::View<DataTransferKit::LocalOrdinal> object_dof_ids,
+		DataTransferKit::View<unsigned> dofs_per_object,
+		std::string &discretization_type) {
 
 }
 
@@ -269,6 +263,9 @@ template <class Scalar>
 void fieldSizeFunction( std::shared_ptr<void> user_data,
                         unsigned &field_dimension, size_t &local_num_dofs ) {
 
+	// field dimension is the number of components for all the fields linearlized
+	// T is 1, tensor stress can be 9
+	// local_num_dofs == same from dof id map function
 }
 
 //---------------------------------------------------------------------------//
@@ -295,13 +292,13 @@ void pushFieldDataFunction(
 /*
  * \brief Evaluate a field at a given set of points in a given set of objects.
  */
-template <class Scalar>
-void evaluateFieldFunction(
-    std::shared_ptr<void> user_data, const DataTransferKit::View<DataTransferKit::Coordinate> evaluation_points,
-    const DataTransferKit::View<DataTransferKit::LocalOrdinal> object_ids, DataTransferKit::View<Scalar> values ) {
+template<class Scalar>
+void evaluateFieldFunction(std::shared_ptr<void> user_data,
+		const DataTransferKit::View<DataTransferKit::Coordinate> evaluation_points,
+		const DataTransferKit::View<DataTransferKit::LocalOrdinal> object_ids,
+		DataTransferKit::View<Scalar> values) {
 
 }
-
 
 }
 

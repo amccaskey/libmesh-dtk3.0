@@ -91,13 +91,14 @@ BOOST_AUTO_TEST_CASE(checkNodeList) {
 	// Create the user application.
 	auto user_app = std::make_shared<
 			DataTransferKit::UserApplication<double,
-					Kokkos::Serial::execution_space>>(fixture->registry);
+					DataTransferKit::Serial>>(fixture->registry);
 
 	// We know this mesh has dim = 3, and nNodes = 125
 	auto expectedDim = 3;
 	auto expectednNodes = 125;
 
 	// We know the coords are as follows:
+	// FIXME AUTO GENERATE BASED ON MESH
 	std::vector<double> expectedCoords { 0, 0, 0, 0.25, 0, 0, 0.25, 0.25, 0, 0,
 			0.25, 0, 0, 0, 0.25, 0.25, 0, 0.25, 0.25, 0.25, 0.25, 0, 0.25, 0.25,
 			0.5, 0, 0, 0.5, 0.25, 0, 0.5, 0, 0.25, 0.5, 0.25, 0.25, 0.75, 0, 0,
