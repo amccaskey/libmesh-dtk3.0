@@ -64,12 +64,36 @@ struct TestFixture {
 				Teuchos::rcp(mesh.get(), false), Teuchos::rcpFromRef(system));
 
 		// Set the user functions.
+		LibmeshApp::LibmeshUserApplication app;
+		auto nodeListSizeFunc = std::bind(
+				&LibmeshApp::LibmeshUserApplication::nodeListSize, app,
+				std::placeholders::_1, std::placeholders::_2,
+				std::placeholders::_3, std::placeholders::_4);
+		auto nodeListDataFunc = std::bind(
+				&LibmeshApp::LibmeshUserApplication::nodeListData, app,
+				std::placeholders::_1, std::placeholders::_2,
+				std::placeholders::_3);
+
+		auto cellListSizeFunc = std::bind(
+				&LibmeshApp::LibmeshUserApplication::cellListSize, app,
+				std::placeholders::_1, std::placeholders::_2,
+				std::placeholders::_3, std::placeholders::_4,
+				std::placeholders::_5, std::placeholders::_6);
+		auto cellListDataFunc = std::bind(
+				&LibmeshApp::LibmeshUserApplication::cellListData, app,
+				std::placeholders::_1, std::placeholders::_2,
+				std::placeholders::_3, std::placeholders::_4,
+				std::placeholders::_5);
+
 		registry = std::make_shared<
 				DataTransferKit::UserFunctionRegistry<double>>();
-		registry->setNodeListSizeFunction(LibmeshApp::nodeListSize,
+		registry->setNodeListSizeFunction(nodeListSizeFunc,
 				libmeshManager);
-		registry->setNodeListDataFunction(LibmeshApp::nodeListData,
+		registry->setNodeListDataFunction(nodeListDataFunc,
 				libmeshManager);
+
+		registry->setCellListSizeFunction(cellListSizeFunc, libmeshManager);
+		registry->setCellListDataFunction(cellListDataFunc, libmeshManager);
 
 		BOOST_VERIFY(mesh);
 		BOOST_VERIFY(mesh->n_local_nodes() == 125);
@@ -97,47 +121,82 @@ BOOST_AUTO_TEST_CASE(checkNodeList) {
 	auto expectedDim = 3;
 	auto expectednNodes = 125;
 
-	// We know the coords are as follows:
-	// FIXME AUTO GENERATE BASED ON MESH
-	std::vector<double> expectedCoords { 0, 0, 0, 0.25, 0, 0, 0.25, 0.25, 0, 0,
-			0.25, 0, 0, 0, 0.25, 0.25, 0, 0.25, 0.25, 0.25, 0.25, 0, 0.25, 0.25,
-			0.5, 0, 0, 0.5, 0.25, 0, 0.5, 0, 0.25, 0.5, 0.25, 0.25, 0.75, 0, 0,
-			0.75, 0.25, 0, 0.75, 0, 0.25, 0.75, 0.25, 0.25, 1, 0, 0, 1, 0.25, 0,
-			1, 0, 0.25, 1, 0.25, 0.25, 0.25, 0.5, 0, 0, 0.5, 0, 0.25, 0.5, 0.25,
-			0, 0.5, 0.25, 0.5, 0.5, 0, 0.5, 0.5, 0.25, 0.75, 0.5, 0, 0.75, 0.5,
-			0.25, 1, 0.5, 0, 1, 0.5, 0.25, 0.25, 0.75, 0, 0, 0.75, 0, 0.25,
-			0.75, 0.25, 0, 0.75, 0.25, 0.5, 0.75, 0, 0.5, 0.75, 0.25, 0.75,
-			0.75, 0, 0.75, 0.75, 0.25, 1, 0.75, 0, 1, 0.75, 0.25, 0.25, 1, 0, 0,
-			1, 0, 0.25, 1, 0.25, 0, 1, 0.25, 0.5, 1, 0, 0.5, 1, 0.25, 0.75, 1,
-			0, 0.75, 1, 0.25, 1, 1, 0, 1, 1, 0.25, 0, 0, 0.5, 0.25, 0, 0.5,
-			0.25, 0.25, 0.5, 0, 0.25, 0.5, 0.5, 0, 0.5, 0.5, 0.25, 0.5, 0.75, 0,
-			0.5, 0.75, 0.25, 0.5, 1, 0, 0.5, 1, 0.25, 0.5, 0.25, 0.5, 0.5, 0,
-			0.5, 0.5, 0.5, 0.5, 0.5, 0.75, 0.5, 0.5, 1, 0.5, 0.5, 0.25, 0.75,
-			0.5, 0, 0.75, 0.5, 0.5, 0.75, 0.5, 0.75, 0.75, 0.5, 1, 0.75, 0.5,
-			0.25, 1, 0.5, 0, 1, 0.5, 0.5, 1, 0.5, 0.75, 1, 0.5, 1, 1, 0.5, 0, 0,
-			0.75, 0.25, 0, 0.75, 0.25, 0.25, 0.75, 0, 0.25, 0.75, 0.5, 0, 0.75,
-			0.5, 0.25, 0.75, 0.75, 0, 0.75, 0.75, 0.25, 0.75, 1, 0, 0.75, 1,
-			0.25, 0.75, 0.25, 0.5, 0.75, 0, 0.5, 0.75, 0.5, 0.5, 0.75, 0.75,
-			0.5, 0.75, 1, 0.5, 0.75, 0.25, 0.75, 0.75, 0, 0.75, 0.75, 0.5, 0.75,
-			0.75, 0.75, 0.75, 0.75, 1, 0.75, 0.75, 0.25, 1, 0.75, 0, 1, 0.75,
-			0.5, 1, 0.75, 0.75, 1, 0.75, 1, 1, 0.75, 0, 0, 1, 0.25, 0, 1, 0.25,
-			0.25, 1, 0, 0.25, 1, 0.5, 0, 1, 0.5, 0.25, 1, 0.75, 0, 1, 0.75,
-			0.25, 1, 1, 0, 1, 1, 0.25, 1, 0.25, 0.5, 1, 0, 0.5, 1, 0.5, 0.5, 1,
-			0.75, 0.5, 1, 1, 0.5, 1, 0.25, 0.75, 1, 0, 0.75, 1, 0.5, 0.75, 1,
-			0.75, 0.75, 1, 1, 0.75, 1, 0.25, 1, 1, 0, 1, 1, 0.5, 1, 1, 0.75, 1,
-			1, 1, 1, 1 };
+	// Create a predicate that picks out only local nodes
+	auto entitySet = libmeshManager->entitySet();
+	auto thisRank = entitySet->communicator()->getRank();
+	LibmeshAdapter::NodePredicateFunction localPredicate =
+			[=]( LibmeshAdapter::LibmeshEntity<libMesh::Node> e) {return e.ownerRank() == thisRank;};
+
+	// Create the entity iterator over those local nodes
+	auto localNodeIter = entitySet->entityIterator(localPredicate);
 
 	// Verify the number of Nodes
 	auto node_list = user_app->getNodeList();
 	BOOST_VERIFY(node_list.coordinates.size() == 375);
 	BOOST_VERIFY((node_list.coordinates.size() / expectedDim) == expectednNodes);
 
+	// Loop over all nodes and set their spatial coordinates
+	unsigned num_nodes = localNodeIter.size();
 	unsigned counter = 0;
-	for (unsigned i = 0; i < expectednNodes; ++i) {
+	auto startNode = localNodeIter.begin();
+	auto endNode = localNodeIter.end();
+	for (auto node = startNode; node != endNode; ++node) {
+		auto libmeshNode = Teuchos::rcp_dynamic_cast<
+				LibmeshAdapter::LibmeshEntityExtraData<libMesh::Node>>(
+				node->extraData());
 		for (unsigned d = 0; d < expectedDim; ++d) {
 			BOOST_VERIFY(
-					node_list.coordinates(i, d) == expectedCoords[counter]);
-			counter++;
+					node_list.coordinates(counter, d)
+							== libmeshNode->d_libmesh_geom->operator()(d));
 		}
+		counter++;
 	}
+}
+
+BOOST_AUTO_TEST_CASE(checkCellList) {
+	auto fixture = TestFixture::instance();
+	auto libmeshManager = fixture->libmeshManager;
+
+	// Get a node list.
+	// Create the user application.
+	auto user_app = std::make_shared<
+			DataTransferKit::UserApplication<double,
+					DataTransferKit::Serial>>(fixture->registry);
+
+
+	std::vector<std::string> cell_topologies {"HEX8"};
+	auto cell_list = user_app->getCellList(cell_topologies);
+
+	BOOST_VERIFY(cell_list.cells.rank() == 2);
+	BOOST_VERIFY(cell_list.cells.size() == 8 * 64);
+	BOOST_VERIFY(cell_list.cells.dimension(0) == 64);
+	BOOST_VERIFY(cell_list.cells.dimension(1) == 8);
+
+	// Create a predicate that picks out only local cells
+	auto entitySet = libmeshManager->entitySet();
+
+	auto thisRank = entitySet->communicator()->getRank();
+	LibmeshAdapter::ElemPredicateFunction localPredicate =
+			[=]( LibmeshAdapter::LibmeshEntity<libMesh::Elem> e) {return e.ownerRank() == thisRank;};
+
+	// Create the entity iterator over those local cells
+	auto localElemIter = entitySet->entityIterator(localPredicate);
+
+	// Loop over all nodes and set their spatial coordinates
+	unsigned elemCounter = 0;
+	auto startElem = localElemIter.begin();
+	auto endElem = localElemIter.end();
+	for (auto elem = startElem; elem != endElem; ++elem) {
+		auto libmeshElem = Teuchos::rcp_dynamic_cast<
+				LibmeshAdapter::LibmeshEntityExtraData<libMesh::Elem>>(
+				elem->extraData());
+		for (int i = 0; i < 8; i++) {
+			BOOST_VERIFY(cell_list.cells[elemCounter*8 + i] == libmeshElem->d_libmesh_geom->node(i));
+		}
+
+		elemCounter++;
+	}
+
+	BOOST_VERIFY(cell_list.cells[511] == 123);
+	BOOST_VERIFY(cell_list.cells(63, 7) == 123);
 }

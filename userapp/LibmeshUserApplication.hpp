@@ -45,260 +45,359 @@
 // nodes, elems, and fields give us 3 things - point cloud transfer, finite element interpolation
 
 namespace LibmeshApp {
-void nodeListSize(std::shared_ptr<void> user_data, unsigned &space_dim,
-		size_t &local_num_nodes, bool &has_ghosts) {
 
-	// Get the LibmeshManager instance
-	auto u = std::static_pointer_cast<LibmeshAdapter::LibmeshManager>(
-			user_data);
+class LibmeshUserApplication {
+public:
 
-	// Create Predicates to pick out all nodes and local nodes
-	auto thisRank = u->entitySet()->communicator()->getRank();
-	LibmeshAdapter::NodePredicateFunction localPredicate =
-			[=]( LibmeshAdapter::LibmeshEntity<libMesh::Node> e) {return e.ownerRank() == thisRank;};
-	LibmeshAdapter::NodePredicateFunction totalPredicate =
-			[=]( LibmeshAdapter::LibmeshEntity<libMesh::Node> e) {return true;};
+	void nodeListSize(std::shared_ptr<void> user_data, unsigned &space_dim,
+			size_t &local_num_nodes, bool &has_ghosts) {
 
-	// Get the Entity Set
-	auto entitySet = u->entitySet();
+		// Get the LibmeshManager instance
+		auto u = std::static_pointer_cast<LibmeshAdapter::LibmeshManager>(
+				user_data);
 
-	// Create Iterators over all local nodes and all nodes
-	auto localNodeIter = entitySet->entityIterator(localPredicate);
-	auto totalNodeIter = entitySet->entityIterator(totalPredicate);
+		// Create Predicates to pick out all nodes and local nodes
+		auto thisRank = u->entitySet()->communicator()->getRank();
+		LibmeshAdapter::NodePredicateFunction localPredicate =
+				[=]( LibmeshAdapter::LibmeshEntity<libMesh::Node> e) {return e.ownerRank() == thisRank;};
+		LibmeshAdapter::NodePredicateFunction totalPredicate =
+				[=]( LibmeshAdapter::LibmeshEntity<libMesh::Node> e) {return true;};
 
-	// Set the total number of local nodes
-	local_num_nodes = localNodeIter.size();
+		// Get the Entity Set
+		auto entitySet = u->entitySet();
 
-	// Set the spacial dimension
-	space_dim = entitySet->physicalDimension();
+		// Create Iterators over all local nodes and all nodes
+		auto localNodeIter = entitySet->entityIterator(localPredicate);
+		auto totalNodeIter = entitySet->entityIterator(totalPredicate);
 
-	// Indicate if we have ghosted nodes
-	has_ghosts = totalNodeIter.size() != local_num_nodes;
-}
+		// Set the total number of local nodes
+		local_num_nodes = localNodeIter.size();
 
-void nodeListData(std::shared_ptr<void> user_data,
-		DataTransferKit::View<DataTransferKit::Coordinate> coordinates,
-		DataTransferKit::View<bool> is_ghost_node) {
+		// Set the spacial dimension
+		space_dim = entitySet->physicalDimension();
 
-	// Get the LibmeshManager instance
-	auto u = std::static_pointer_cast<LibmeshAdapter::LibmeshManager>(user_data);
+		// Indicate if we have ghosted nodes
+		has_ghosts = totalNodeIter.size() != local_num_nodes;
+	}
 
-	// Get the EntitySet
-	auto entitySet = u->entitySet();
+	void nodeListData(std::shared_ptr<void> user_data,
+			DataTransferKit::View<DataTransferKit::Coordinate> coordinates,
+			DataTransferKit::View<bool> is_ghost_node) {
 
-	// Get the spacial dimenstion
-	auto dim = entitySet->physicalDimension();
+		// Get the LibmeshManager instance
+		auto u = std::static_pointer_cast<LibmeshAdapter::LibmeshManager>(
+				user_data);
 
-	// Create a predicate that picks out only local nodes
-	auto thisRank = u->entitySet()->communicator()->getRank();
-	LibmeshAdapter::NodePredicateFunction localPredicate =
-			[=]( LibmeshAdapter::LibmeshEntity<libMesh::Node> e) {return e.ownerRank() == thisRank;};
+		bool has_ghosts = false;
+		unsigned space_dim = 0;
+		size_t local_num_nodes = 0;
+		nodeListSize(user_data, space_dim, local_num_nodes, has_ghosts);
 
-	// Create the entity iterator over those local nodes
-	auto localNodeIter = entitySet->entityIterator(localPredicate);
+		// Get the EntitySet
+		auto entitySet = u->entitySet();
 
-	// Loop over all nodes and set their spatial coordinates
-	unsigned num_nodes = localNodeIter.size();
-	unsigned counter = 0;
-	auto startNode = localNodeIter.begin();
-	auto endNode = localNodeIter.end();
-	for (auto node = startNode; node != endNode; ++node) {
-		auto libmeshNode = Teuchos::rcp_dynamic_cast<
-				LibmeshAdapter::LibmeshEntityExtraData<libMesh::Node>>(
-				node->extraData());
-		for (unsigned d = 0; d < dim; ++d) {
-			coordinates[num_nodes * d + counter] =
-					libmeshNode->d_libmesh_geom->operator()(d);
+		// Create a predicate that picks out only local nodes
+		auto thisRank = entitySet->communicator()->getRank();
+		LibmeshAdapter::NodePredicateFunction localPredicate =
+				[=]( LibmeshAdapter::LibmeshEntity<libMesh::Node> e) {return e.ownerRank() == thisRank;};
+
+		// Create the entity iterator over those local nodes
+		auto localNodeIter = entitySet->entityIterator(localPredicate);
+
+		// Loop over all nodes and set their spatial coordinates
+		unsigned counter = 0;
+		auto startNode = localNodeIter.begin();
+		auto endNode = localNodeIter.end();
+		for (auto node = startNode; node != endNode; ++node) {
+			auto libmeshNode = Teuchos::rcp_dynamic_cast<
+					LibmeshAdapter::LibmeshEntityExtraData<libMesh::Node>>(
+					node->extraData());
+			for (unsigned d = 0; d < space_dim; ++d) {
+				coordinates[local_num_nodes * d + counter] =
+						libmeshNode->d_libmesh_geom->operator()(d);
+				if (has_ghosts) {
+					is_ghost_node[counter] =
+							libmeshNode->d_libmesh_geom->processor_id()
+									== thisRank;
+				}
+			}
+
+			counter++;
+		}
+	}
+
+	// CELLS ARE Elements. list of cells that all have same topology.
+	void cellListSize(std::shared_ptr<void> user_data, unsigned &space_dim,
+			size_t &local_num_nodes, size_t &local_num_cells,
+			unsigned &nodes_per_cell, bool &has_ghosts) {
+
+		// Get the LibmeshManager instance
+		auto u = std::static_pointer_cast<LibmeshAdapter::LibmeshManager>(
+				user_data);
+
+		// Get the EntitySet
+		auto entitySet = u->entitySet();
+
+		// Create a predicate that picks out only local cells
+		auto thisRank = entitySet->communicator()->getRank();
+		LibmeshAdapter::ElemPredicateFunction localPredicate =
+				[=]( LibmeshAdapter::LibmeshEntity<libMesh::Elem> e) {return e.ownerRank() == thisRank;};
+		LibmeshAdapter::ElemPredicateFunction totalPredicate =
+				[=]( LibmeshAdapter::LibmeshEntity<libMesh::Elem> e) {return true;};
+
+		// Create the entity iterator over those local cells
+		auto localElemIter = entitySet->entityIterator(localPredicate);
+		auto totalElemIter = entitySet->entityIterator(totalPredicate);
+
+		// Get the number of local nodes and space dimension
+		bool has_node_ghosts = false;
+		nodeListSize(user_data, space_dim, local_num_nodes, has_node_ghosts);
+
+		// Set the local number of cells and if there are ghosts
+		local_num_cells = localElemIter.size();
+		has_ghosts = totalElemIter.size() != local_num_cells;
+
+		// Get the total number of nodes per cell
+		auto startElem = localElemIter.begin();
+		auto libmeshElem = Teuchos::rcp_dynamic_cast<
+				LibmeshAdapter::LibmeshEntityExtraData<libMesh::Elem>>(
+				startElem->extraData());
+		nodes_per_cell = libmeshElem->d_libmesh_geom->n_nodes();
+	}
+
+	//---------------------------------------------------------------------------//
+	/*!
+	 * \brief Get the data for a single topology cell list.
+	 */
+	void cellListData(std::shared_ptr<void> user_data,
+			DataTransferKit::View<DataTransferKit::Coordinate> coordinates,
+			DataTransferKit::View<DataTransferKit::LocalOrdinal> cells,
+			DataTransferKit::View<bool> is_ghost_cell,
+			std::string &cell_topology) {
+
+		// Get the LibmeshManager instance
+		auto u = std::static_pointer_cast<LibmeshAdapter::LibmeshManager>(
+				user_data);
+		auto entitySet = u->entitySet();
+
+		// coordinates are the coords of the cells' nodes.
+		unsigned space_dim = 0, nodes_per_cell = 0;
+		size_t local_num_nodes = 0, local_num_cells = 0;
+		bool has_ghosts = false;
+		cellListSize(user_data, space_dim, local_num_nodes, local_num_cells,
+				nodes_per_cell, has_ghosts);
+
+		// Get the node list data
+		Kokkos::View<bool *, Kokkos::LayoutLeft, Kokkos::Serial> ghostsArray(
+				"is_ghost_node", local_num_nodes);
+		DataTransferKit::View<bool> is_ghost_node(ghostsArray);
+		nodeListData(user_data, coordinates, is_ghost_node);
+
+		// Create a predicate that picks out only local cells
+		auto thisRank = entitySet->communicator()->getRank();
+		LibmeshAdapter::ElemPredicateFunction localPredicate =
+				[=]( LibmeshAdapter::LibmeshEntity<libMesh::Elem> e) {return e.ownerRank() == thisRank;};
+		// Create the entity iterator over those local cells
+		auto localElemIter = entitySet->entityIterator(localPredicate);
+
+		// Loop over all nodes and set their spatial coordinates
+		unsigned elemCounter = 0;
+		auto startElem = localElemIter.begin();
+		auto endElem = localElemIter.end();
+		for (auto elem = startElem; elem != endElem; ++elem) {
+			auto libmeshElem = Teuchos::rcp_dynamic_cast<
+					LibmeshAdapter::LibmeshEntityExtraData<libMesh::Elem>>(
+					elem->extraData());
+
+			if (has_ghosts) {
+				is_ghost_cell[elemCounter] =
+						libmeshElem->d_libmesh_geom->processor_id() == thisRank;
+			}
+
+			for (unsigned i = 0; i < nodes_per_cell; ++i) {
+//				std::cout << "cells[" << elemCounter << "*8+" << i << "="
+//						<< (elemCounter * nodes_per_cell + i) << "] = "
+//						<< libmeshElem->d_libmesh_geom->node(i) << "\n";
+				cells[elemCounter * nodes_per_cell + i] =
+						libmeshElem->d_libmesh_geom->node(i);
+			}
+
+			elemCounter++;
 		}
 
-		counter++;
 	}
-}
-
-// DONT REALLY NEED THIS
-void boundingVolumeListSize( std::shared_ptr<void> user_data, unsigned &space_dim,
-                        size_t &local_num_volumes, bool &has_ghosts ) {
-}
-
-// DONT REALLY NEED THIS
-void boundingVolumeData(std::shared_ptr<void> user_data,
-		DataTransferKit::View<DataTransferKit::Coordinate> bounding_volumes,
-		DataTransferKit::View<bool> is_ghost_volume) {
-
-}
-
-// DONT REALLY NEED THIS
-void polyhedronListSizeFunction( std::shared_ptr<void> user_data, unsigned &space_dim,
-                        size_t &local_num_nodes, size_t &local_num_faces,
-                        size_t &total_nodes_per_face, size_t &local_num_cells,
-                        size_t &total_faces_per_cell, bool &has_ghosts ) {
-
-}
-
-// DONT REALLY NEED THIS
-void polyhedronListDataFunction(
-    std::shared_ptr<void> user_data, DataTransferKit::View<DataTransferKit::Coordinate> coordinates,
-	DataTransferKit::View<DataTransferKit::LocalOrdinal> faces, DataTransferKit::View<unsigned> nodes_per_face,
-	DataTransferKit::View<DataTransferKit::LocalOrdinal> cells, DataTransferKit::View<unsigned> faces_per_cell,
-	DataTransferKit::View<int> face_orientation, DataTransferKit::View<bool> is_ghost_cell ) {
-
-}
-
-// CELLS ARE Elements. list of cells that all have same topology.
-void cellListSizeFunction( std::shared_ptr<void> user_data, unsigned &space_dim,
-                        size_t &local_num_nodes, size_t &local_num_cells,
-                        unsigned &nodes_per_cell, bool &has_ghosts ) {
-
-}
 
 //---------------------------------------------------------------------------//
-/*!
- * \brief Get the data for a single topology cell list.
- */
-void cellListDataFunction( std::shared_ptr<void> user_data,
-		DataTransferKit::View<DataTransferKit::Coordinate> coordinates, DataTransferKit::View<DataTransferKit::LocalOrdinal> cells,
-		DataTransferKit::View<bool> is_ghost_cell, std::string &cell_topology ) {
+	/*!
+	 * \brief Get the size parameters for building a cell list with mixed
+	 * topologies.
+	 */
+	void mixedTopologyCellListSizeFunction(std::shared_ptr<void> user_data,
+			unsigned &space_dim, size_t &local_num_nodes,
+			size_t &local_num_cells, size_t &total_nodes_per_cell,
+			bool &has_ghosts) {
 
-	// coordinates are the coords of the cells' nodes.
-}
-
-//---------------------------------------------------------------------------//
-/*!
- * \brief Get the size parameters for building a cell list with mixed
- * topologies.
- */
-void mixedTopologyCellListSizeFunction( std::shared_ptr<void> user_data, unsigned &space_dim,
-                        size_t &local_num_nodes, size_t &local_num_cells,
-                        size_t &total_nodes_per_cell, bool &has_ghosts ) {
-
-}
+	}
 
 //---------------------------------------------------------------------------//
-/*!
- * \brief Get the data for a mixed topology cell list.
- */
-void mixedTopologyCellListDataFunction(
-    std::shared_ptr<void> user_data, DataTransferKit::View<DataTransferKit::Coordinate> coordinates,
-	DataTransferKit::View<DataTransferKit::LocalOrdinal> cells, DataTransferKit::View<unsigned> cell_topology_ids,
-	DataTransferKit::View<bool> is_ghost_cell, std::vector<std::string> &cell_topologies ) {
+	/*!
+	 * \brief Get the data for a mixed topology cell list.
+	 */
+	void mixedTopologyCellListDataFunction(std::shared_ptr<void> user_data,
+			DataTransferKit::View<DataTransferKit::Coordinate> coordinates,
+			DataTransferKit::View<DataTransferKit::LocalOrdinal> cells,
+			DataTransferKit::View<unsigned> cell_topology_ids,
+			DataTransferKit::View<bool> is_ghost_cell,
+			std::vector<std::string> &cell_topologies) {
 
-}
-
-//---------------------------------------------------------------------------//
-/*!
- * \brief Get the size parameters for a boundary.
- */
-void boundarySizeFunction(
-    std::shared_ptr<void> user_data, size_t &local_num_faces ) {
-
-}
+	}
 
 //---------------------------------------------------------------------------//
-/*!
- * \brief Get the data for a boundary.
- */
-void boundaryDataFunction(
-    std::shared_ptr<void> user_data, DataTransferKit::View<DataTransferKit::LocalOrdinal> boundary_cells,
-	DataTransferKit::View<unsigned> cell_faces_on_boundary ) {
+	/*!
+	 * \brief Get the size parameters for a boundary.
+	 */
+	void boundarySizeFunction(std::shared_ptr<void> user_data,
+			size_t &local_num_faces) {
 
-}
+	}
+
+//---------------------------------------------------------------------------//
+	/*!
+	 * \brief Get the data for a boundary.
+	 */
+	void boundaryDataFunction(std::shared_ptr<void> user_data,
+			DataTransferKit::View<DataTransferKit::LocalOrdinal> boundary_cells,
+			DataTransferKit::View<unsigned> cell_faces_on_boundary) {
+
+	}
 
 //---------------------------------------------------------------------------//
 // Degree-of-freedom interface.
 //---------------------------------------------------------------------------//
-/*!
- * \brief Get the size parameters for a degree-of-freedom id map with a single
- * number of dofs per object.
- */
-void dofMapSizeFunction( std::shared_ptr<void> user_data, size_t &local_num_dofs,
-                        size_t &local_num_objects, unsigned &dofs_per_object ) {
+	/*!
+	 * \brief Get the size parameters for a degree-of-freedom id map with a single
+	 * number of dofs per object.
+	 */
+	void dofMapSizeFunction(std::shared_ptr<void> user_data,
+			size_t &local_num_dofs, size_t &local_num_objects,
+			unsigned &dofs_per_object) {
 
-	// local_num_dofs would be total number of degrees of freedom
-	// local num objects is number of cells in FEM case (elements)
-	// dofs per object is 8 for Hex8
-}
-
-//---------------------------------------------------------------------------//
-/*!
- * \brief Get the data for a degree-of-freedom id map with a single number of
- * dofs per object.
- */
-void dofMapDataFunction(
-    std::shared_ptr<void> user_data, DataTransferKit::View<DataTransferKit::GlobalOrdinal> global_dof_ids,
-	DataTransferKit::View<DataTransferKit::LocalOrdinal> object_dof_ids, std::string &discretization_type ) {
-
-}
+		// local_num_dofs would be total number of degrees of freedom
+		// local num objects is number of cells in FEM case (elements)
+		// dofs per object is 8 for Hex8
+	}
 
 //---------------------------------------------------------------------------//
-/*!
- * \brief Get the size parameters for a degree-of-freedom id map with each
- * object having a potentially different number of dofs (e.g. mixed topology
- * cell lists or polyhedron lists).
- */
-void mixedTopologyDOFMapSizeFunction(
-    std::shared_ptr<void> user_data, size_t &local_num_dofs,
-    size_t &local_num_objects, size_t &total_dofs_per_object ) {
+	/*!
+	 * \brief Get the data for a degree-of-freedom id map with a single number of
+	 * dofs per object.
+	 */
+	void dofMapDataFunction(std::shared_ptr<void> user_data,
+			DataTransferKit::View<DataTransferKit::GlobalOrdinal> global_dof_ids,
+			DataTransferKit::View<DataTransferKit::LocalOrdinal> object_dof_ids,
+			std::string &discretization_type) {
 
-}
-
-//---------------------------------------------------------------------------//
-/*!
- * \brief Get the data for a multiple object degree-of-freedom id map
- * (e.g. mixed topology cell lists or polyhedron lists).
- */
-void mixedTopologyDOFMapDataFunction(std::shared_ptr<void> user_data,
-		DataTransferKit::View<DataTransferKit::GlobalOrdinal> global_dof_ids,
-		DataTransferKit::View<DataTransferKit::LocalOrdinal> object_dof_ids,
-		DataTransferKit::View<unsigned> dofs_per_object,
-		std::string &discretization_type) {
-
-}
+	}
 
 //---------------------------------------------------------------------------//
-/*!
- * \brief Get the size parameters for a field. Field must be of size
- * local_num_dofs in the associated dof_id_map.
- */
-template <class Scalar>
-void fieldSizeFunction( std::shared_ptr<void> user_data,
-                        unsigned &field_dimension, size_t &local_num_dofs ) {
+	/*!
+	 * \brief Get the size parameters for a degree-of-freedom id map with each
+	 * object having a potentially different number of dofs (e.g. mixed topology
+	 * cell lists or polyhedron lists).
+	 */
+	void mixedTopologyDOFMapSizeFunction(std::shared_ptr<void> user_data,
+			size_t &local_num_dofs, size_t &local_num_objects,
+			size_t &total_dofs_per_object) {
 
-	// field dimension is the number of components for all the fields linearlized
-	// T is 1, tensor stress can be 9
-	// local_num_dofs == same from dof id map function
-}
+	}
 
 //---------------------------------------------------------------------------//
-/*!
- * \brief Pull data from application into a field.
- */
-template <class Scalar>
-void pullFieldDataFunction(
-    std::shared_ptr<void> user_data, DataTransferKit::View<Scalar> field_dofs ) {
+	/*!
+	 * \brief Get the data for a multiple object degree-of-freedom id map
+	 * (e.g. mixed topology cell lists or polyhedron lists).
+	 */
+	void mixedTopologyDOFMapDataFunction(std::shared_ptr<void> user_data,
+			DataTransferKit::View<DataTransferKit::GlobalOrdinal> global_dof_ids,
+			DataTransferKit::View<DataTransferKit::LocalOrdinal> object_dof_ids,
+			DataTransferKit::View<unsigned> dofs_per_object,
+			std::string &discretization_type) {
 
-}
-
-//---------------------------------------------------------------------------//
-/*
- * \brief Push data from a field into the application.
- */
-template <class Scalar>
-void pushFieldDataFunction(
-    std::shared_ptr<void> user_data, const DataTransferKit::View<Scalar> field_dofs ) {
-
-}
+	}
 
 //---------------------------------------------------------------------------//
-/*
- * \brief Evaluate a field at a given set of points in a given set of objects.
- */
-template<class Scalar>
-void evaluateFieldFunction(std::shared_ptr<void> user_data,
-		const DataTransferKit::View<DataTransferKit::Coordinate> evaluation_points,
-		const DataTransferKit::View<DataTransferKit::LocalOrdinal> object_ids,
-		DataTransferKit::View<Scalar> values) {
+	/*!
+	 * \brief Get the size parameters for a field. Field must be of size
+	 * local_num_dofs in the associated dof_id_map.
+	 */
+	template<class Scalar>
+	void fieldSizeFunction(std::shared_ptr<void> user_data,
+			unsigned &field_dimension, size_t &local_num_dofs) {
 
-}
+		// field dimension is the number of components for all the fields linearlized
+		// T is 1, tensor stress can be 9
+		// local_num_dofs == same from dof id map function
+	}
+
+//---------------------------------------------------------------------------//
+	/*!
+	 * \brief Pull data from application into a field.
+	 */
+	template<class Scalar>
+	void pullFieldDataFunction(std::shared_ptr<void> user_data,
+			DataTransferKit::View<Scalar> field_dofs) {
+
+	}
+
+//---------------------------------------------------------------------------//
+	/*
+	 * \brief Push data from a field into the application.
+	 */
+	template<class Scalar>
+	void pushFieldDataFunction(std::shared_ptr<void> user_data,
+			const DataTransferKit::View<Scalar> field_dofs) {
+
+	}
+
+//---------------------------------------------------------------------------//
+	/*
+	 * \brief Evaluate a field at a given set of points in a given set of objects.
+	 */
+	template<class Scalar>
+	void evaluateFieldFunction(std::shared_ptr<void> user_data,
+			const DataTransferKit::View<DataTransferKit::Coordinate> evaluation_points,
+			const DataTransferKit::View<DataTransferKit::LocalOrdinal> object_ids,
+			DataTransferKit::View<Scalar> values) {
+
+	}
+
+	/* We don't really need the following functions yet. */
+	void boundingVolumeListSize(std::shared_ptr<void> user_data,
+			unsigned &space_dim, size_t &local_num_volumes, bool &has_ghosts) {
+	}
+
+	void boundingVolumeData(std::shared_ptr<void> user_data,
+			DataTransferKit::View<DataTransferKit::Coordinate> bounding_volumes,
+			DataTransferKit::View<bool> is_ghost_volume) {
+
+	}
+	void polyhedronListSizeFunction(std::shared_ptr<void> user_data,
+			unsigned &space_dim, size_t &local_num_nodes,
+			size_t &local_num_faces, size_t &total_nodes_per_face,
+			size_t &local_num_cells, size_t &total_faces_per_cell,
+			bool &has_ghosts) {
+
+	}
+	void polyhedronListDataFunction(std::shared_ptr<void> user_data,
+			DataTransferKit::View<DataTransferKit::Coordinate> coordinates,
+			DataTransferKit::View<DataTransferKit::LocalOrdinal> faces,
+			DataTransferKit::View<unsigned> nodes_per_face,
+			DataTransferKit::View<DataTransferKit::LocalOrdinal> cells,
+			DataTransferKit::View<unsigned> faces_per_cell,
+			DataTransferKit::View<int> face_orientation,
+			DataTransferKit::View<bool> is_ghost_cell) {
+
+	}
+};
 
 }
 
