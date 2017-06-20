@@ -64,7 +64,7 @@ struct TestFixture {
 				Teuchos::rcp(mesh.get(), false), Teuchos::rcpFromRef(system));
 
 		// Set the user functions.
-		LibmeshApp::LibmeshUserApplication app;
+		LibmeshApp::LibmeshUserApplication app(libmeshManager);
 		auto nodeListSizeFunc = std::bind(
 				&LibmeshApp::LibmeshUserApplication::nodeListSize, app,
 				std::placeholders::_1, std::placeholders::_2,
@@ -199,4 +199,20 @@ BOOST_AUTO_TEST_CASE(checkCellList) {
 
 	BOOST_VERIFY(cell_list.cells[511] == 123);
 	BOOST_VERIFY(cell_list.cells(63, 7) == 123);
+}
+
+
+BOOST_AUTO_TEST_CASE(checkBoundaries) {
+	auto fixture = TestFixture::instance();
+	auto libmeshManager = fixture->libmeshManager;
+
+	// Get a node list.
+	// Create the user application.
+	auto user_app = std::make_shared<
+			DataTransferKit::UserApplication<double,
+					DataTransferKit::Serial>>(fixture->registry);
+
+
+
+
 }

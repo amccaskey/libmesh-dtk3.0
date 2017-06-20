@@ -47,24 +47,34 @@
 namespace LibmeshApp {
 
 class LibmeshUserApplication {
+
+protected:
+
+	int thisRank = 0;
+
+	std::shared_ptr<LibmeshAdapter::LibmeshManager> manager;
+
+	Teuchos::RCP<LibmeshAdapter::LibmeshEntitySet> entitySet;
+
 public:
+
+	LibmeshUserApplication(std::shared_ptr<LibmeshAdapter::LibmeshManager> user_data) :
+			manager(user_data), entitySet(user_data->entitySet()), thisRank(user_data->entitySet()->communicator()->getRank()) {
+
+		entitySet = manager->entitySet();
+
+		thisRank = entitySet->communicator()->getRank();
+
+	}
 
 	void nodeListSize(std::shared_ptr<void> user_data, unsigned &space_dim,
 			size_t &local_num_nodes, bool &has_ghosts) {
 
-		// Get the LibmeshManager instance
-		auto u = std::static_pointer_cast<LibmeshAdapter::LibmeshManager>(
-				user_data);
-
 		// Create Predicates to pick out all nodes and local nodes
-		auto thisRank = u->entitySet()->communicator()->getRank();
 		LibmeshAdapter::NodePredicateFunction localPredicate =
 				[=]( LibmeshAdapter::LibmeshEntity<libMesh::Node> e) {return e.ownerRank() == thisRank;};
 		LibmeshAdapter::NodePredicateFunction totalPredicate =
 				[=]( LibmeshAdapter::LibmeshEntity<libMesh::Node> e) {return true;};
-
-		// Get the Entity Set
-		auto entitySet = u->entitySet();
 
 		// Create Iterators over all local nodes and all nodes
 		auto localNodeIter = entitySet->entityIterator(localPredicate);
@@ -84,17 +94,10 @@ public:
 			DataTransferKit::View<DataTransferKit::Coordinate> coordinates,
 			DataTransferKit::View<bool> is_ghost_node) {
 
-		// Get the LibmeshManager instance
-		auto u = std::static_pointer_cast<LibmeshAdapter::LibmeshManager>(
-				user_data);
-
 		bool has_ghosts = false;
 		unsigned space_dim = 0;
 		size_t local_num_nodes = 0;
 		nodeListSize(user_data, space_dim, local_num_nodes, has_ghosts);
-
-		// Get the EntitySet
-		auto entitySet = u->entitySet();
 
 		// Create a predicate that picks out only local nodes
 		auto thisRank = entitySet->communicator()->getRank();
@@ -131,15 +134,7 @@ public:
 			size_t &local_num_nodes, size_t &local_num_cells,
 			unsigned &nodes_per_cell, bool &has_ghosts) {
 
-		// Get the LibmeshManager instance
-		auto u = std::static_pointer_cast<LibmeshAdapter::LibmeshManager>(
-				user_data);
-
-		// Get the EntitySet
-		auto entitySet = u->entitySet();
-
 		// Create a predicate that picks out only local cells
-		auto thisRank = entitySet->communicator()->getRank();
 		LibmeshAdapter::ElemPredicateFunction localPredicate =
 				[=]( LibmeshAdapter::LibmeshEntity<libMesh::Elem> e) {return e.ownerRank() == thisRank;};
 		LibmeshAdapter::ElemPredicateFunction totalPredicate =
@@ -175,11 +170,6 @@ public:
 			DataTransferKit::View<bool> is_ghost_cell,
 			std::string &cell_topology) {
 
-		// Get the LibmeshManager instance
-		auto u = std::static_pointer_cast<LibmeshAdapter::LibmeshManager>(
-				user_data);
-		auto entitySet = u->entitySet();
-
 		// coordinates are the coords of the cells' nodes.
 		unsigned space_dim = 0, nodes_per_cell = 0;
 		size_t local_num_nodes = 0, local_num_cells = 0;
@@ -194,7 +184,6 @@ public:
 		nodeListData(user_data, coordinates, is_ghost_node);
 
 		// Create a predicate that picks out only local cells
-		auto thisRank = entitySet->communicator()->getRank();
 		LibmeshAdapter::ElemPredicateFunction localPredicate =
 				[=]( LibmeshAdapter::LibmeshEntity<libMesh::Elem> e) {return e.ownerRank() == thisRank;};
 		// Create the entity iterator over those local cells
@@ -258,6 +247,21 @@ public:
 	 */
 	void boundarySizeFunction(std::shared_ptr<void> user_data,
 			size_t &local_num_faces) {
+
+		LibmeshAdapter::ElemPredicateFunction localPredicate =
+						[=]( LibmeshAdapter::LibmeshEntity<libMesh::Elem> e) {return e.ownerRank() == thisRank;};
+				// Create the entity iterator over those local cells
+				auto localElemIter = entitySet->entityIterator(localPredicate);
+
+				// Loop over all nodes and set their spatial coordinates
+				unsigned elemCounter = 0;
+				auto startElem = localElemIter.begin();
+		auto extraData = Teuchos::rcp_dynamic_cast<
+							LibmeshAdapter::LibmeshEntityExtraData<libMesh::Elem>>(
+							startElem->extraData());
+		auto nSides = extraData->d_libmesh_geom->n_sides();
+
+		std::cout << "N SIDES = " << nSides << "\n";
 
 	}
 
