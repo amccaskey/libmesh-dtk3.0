@@ -8,6 +8,8 @@ set(CMAKE_CXX_STANDARD 14)
 message(STATUS "C++ version ${CXX_STANDARD} configured.")
 
 set(CMAKE_MODULE_PATH ${CMAKE_MODULE_PATH} "${CMAKE_SOURCE_DIR}/cmake/Modules")
+set(BOOST_ROOT $ENV{BOOST_DIR})
+
 include(boost_helper)
 
 find_package(MPI REQUIRED)
@@ -22,6 +24,7 @@ include_directories(${MPI_INCLUDE_PATH})
 include_directories(${DTK_TRILINOS_ROOT}/include)
 include_directories(${Boost_INCLUDE_DIRS})
 include_directories(${Libmesh_INCLUDE_DIRS})
+include_directories(${PETSC_INCLUDE_DIR})
 
 add_subdirectory(adapter)
 add_subdirectory(userapp)

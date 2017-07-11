@@ -7,6 +7,16 @@
 #include <boost/mpi/environment.hpp>
 #include <boost/mpi/communicator.hpp>
 
+#include "libmesh/dirichlet_boundaries.h"
+#include "libmesh/analytic_function.h"
+
+void exact_solution_wrapper (libMesh::DenseVector<libMesh::Number> & output,
+                             const libMesh::Point & p,
+                             const libMesh::Real)
+{
+  output(0) = 0.0;
+}
+
 struct TestFixture {
 	static TestFixture*& instance() {
 		static TestFixture* inst = 0;
@@ -59,6 +69,28 @@ struct TestFixture {
 		system.solution->close();
 		system.update();
 
+		std::set<libMesh::boundary_id_type> boundary_ids;
+		// the dim==1 mesh has two boundaries with IDs 0 and 1
+		boundary_ids.insert(0);
+		boundary_ids.insert(1);
+		boundary_ids.insert(2);
+		boundary_ids.insert(3);
+		boundary_ids.insert(4);
+		boundary_ids.insert(5);
+
+		std::vector<unsigned int> variables(1);
+		variables[0] = var_id;
+
+		libMesh::AnalyticFunction<> exact_solution_object(exact_solution_wrapper);
+
+		libMesh::DirichletBoundary dirichlet_bc(boundary_ids, variables, exact_solution_object);
+
+//		system.get_dof_map().add_dirichlet_boundary(dirichlet_bc);
+
+		equation_systems.init();
+
+//		std::cout << "HELLO MESH:\n" << mesh->get_info() << "\n";
+//		mesh->get_boundary_info().print_info(std::cout);
 		// Create a vector from the variable over all subdomains.
 		libmeshManager = std::make_shared<LibmeshAdapter::LibmeshManager>(
 				Teuchos::rcp(mesh.get(), false), Teuchos::rcpFromRef(system));
@@ -85,6 +117,15 @@ struct TestFixture {
 				std::placeholders::_3, std::placeholders::_4,
 				std::placeholders::_5);
 
+		auto boundarySizeFunc = std::bind(
+				&LibmeshApp::LibmeshUserApplication::boundarySizeFunction, app,
+				std::placeholders::_1, std::placeholders::_2,
+				std::placeholders::_3);
+		auto boundaryDataFunc = std::bind(
+				&LibmeshApp::LibmeshUserApplication::boundaryDataFunction, app,
+				std::placeholders::_1, std::placeholders::_2,
+				std::placeholders::_3,  std::placeholders::_4);
+
 		registry = std::make_shared<
 				DataTransferKit::UserFunctionRegistry<double>>();
 		registry->setNodeListSizeFunction(nodeListSizeFunc,
@@ -94,6 +135,9 @@ struct TestFixture {
 
 		registry->setCellListSizeFunction(cellListSizeFunc, libmeshManager);
 		registry->setCellListDataFunction(cellListDataFunc, libmeshManager);
+
+		registry->setBoundarySizeFunction(boundarySizeFunc, libmeshManager);
+		registry->setBoundaryDataFunction(boundaryDataFunc, libmeshManager);
 
 		BOOST_VERIFY(mesh);
 		BOOST_VERIFY(mesh->n_local_nodes() == 125);
@@ -211,7 +255,17 @@ BOOST_AUTO_TEST_CASE(checkBoundaries) {
 	auto user_app = std::make_shared<
 			DataTransferKit::UserApplication<double,
 					DataTransferKit::Serial>>(fixture->registry);
+	std::vector<std::string> cell_topologies {"HEX8"};
+	auto cell_list = user_app->getCellList(cell_topologies);
+	user_app->getBoundary("bottom", cell_list);
 
+	auto boundaryCells = cell_list.boundary_cells;
+
+
+	// THis is a 4x4x4 mesh, so the bottom boundary
+	// condition should have faces from  16 cells that
+	// make it up
+	BOOST_VERIFY(boundaryCells.size() == 16);
 
 
 

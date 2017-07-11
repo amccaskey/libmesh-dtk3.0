@@ -4,11 +4,12 @@ rm -rf CMakeFiles/
 EXTRA_ARGS=("$@")
 ARGS=(
     -D CMAKE_BUILD_TYPE=Debug
-    -D BUILD_SHARED_LIBS=ON
     -D DTK_TRILINOS_ROOT=/opt/dtk
     -D Boost_INCLUDE_DIRS=$BOOST_DIR/include
     -D Boost_LIBRARY_DIRS=$BOOST_DIR/lib
     -D Libmesh_INCLUDE_DIRS=$LIBMESH_DIR/include
     -D Libmesh_LIBRARY_DIRS=$LIBMESH_DIR/lib
+    -D PETSC_INCLUDE_DIR=$PETSC_DIR/include
+    -D PETSC_LIBRARY_DIR=$PETSC_DIR/lib
     )
 cmake "${ARGS[@]}" "${EXTRA_ARGS[@]}" /projects/libmesh-dtk3.0

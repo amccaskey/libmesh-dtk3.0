@@ -41,7 +41,7 @@ public:
 			d_elem_id_map.emplace((*elem)->id(), *elem);
 			num_nodes = (*elem)->n_nodes();
 			for (int n = 0; n < num_nodes; ++n) {
-				d_node_to_elem_map.emplace((*elem)->get_node(n), *elem);
+				d_node_to_elem_map.emplace(&(*elem)->node_ref(n), *elem);
 			}
 		}
 
@@ -112,7 +112,7 @@ void LibmeshAdjacencies::getLibmeshAdjacencies<libMesh::Elem, libMesh::Node>(
 	int num_nodes = entity->n_nodes();
 	adjacent_entities.resize(num_nodes);
 	for (int n = 0; n < num_nodes; ++n) {
-		adjacent_entities[n] = Teuchos::ptr(entity->get_node(n));
+		adjacent_entities[n] = Teuchos::ptr(&entity->node_ref(n));
 	}
 }
 

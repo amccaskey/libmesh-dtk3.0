@@ -1,6 +1,7 @@
 #ifndef LIBMESHUSERAPP_LIBMESHUSERAPPLICATION_HPP
 #define LIBMESHUSERAPP_LIBMESHUSERAPPLICATION_HPP
 
+#include <DTK_ConfigDefs.hpp>
 #include <DTK_UserApplication.hpp>
 #include <DTK_UserDataInterface.hpp>
 #include <DTK_UserFunctionRegistry.hpp>
@@ -245,23 +246,36 @@ public:
 	/*!
 	 * \brief Get the size parameters for a boundary.
 	 */
-	void boundarySizeFunction(std::shared_ptr<void> user_data,
+	void boundarySizeFunction(std::shared_ptr<void> user_data, const std::string& boundary_name,
 			size_t &local_num_faces) {
 
+		auto boundaryInfo = manager->getMesh()->get_boundary_info();
+		auto boundaryId = boundaryInfo.get_id_by_name(boundary_name);
+		local_num_faces = 0;
+
+		// Get all local elements
 		LibmeshAdapter::ElemPredicateFunction localPredicate =
 						[=]( LibmeshAdapter::LibmeshEntity<libMesh::Elem> e) {return e.ownerRank() == thisRank;};
-				// Create the entity iterator over those local cells
-				auto localElemIter = entitySet->entityIterator(localPredicate);
 
-				// Loop over all nodes and set their spatial coordinates
-				unsigned elemCounter = 0;
-				auto startElem = localElemIter.begin();
-		auto extraData = Teuchos::rcp_dynamic_cast<
-							LibmeshAdapter::LibmeshEntityExtraData<libMesh::Elem>>(
-							startElem->extraData());
-		auto nSides = extraData->d_libmesh_geom->n_sides();
 
-		std::cout << "N SIDES = " << nSides << "\n";
+		// Create the entity iterator over those local cells
+		auto localElemIter = entitySet->entityIterator(localPredicate);
+
+		// Loop over all nodes and set their spatial coordinates
+		auto startElem = localElemIter.begin();
+		auto endElem = localElemIter.end();
+		for (auto elem = startElem; elem != endElem; ++elem) {
+			auto libmeshElem = Teuchos::rcp_dynamic_cast<
+												LibmeshAdapter::LibmeshEntityExtraData<libMesh::Elem>>(
+												elem->extraData());
+			libMesh::Elem * e = libmeshElem->d_libmesh_geom.get();
+			auto nSides = libmeshElem->d_libmesh_geom->n_sides();
+			for (auto i = 0; i < nSides; i++) {
+				if (boundaryInfo.has_boundary_id(e, i, boundaryId)) {
+					local_num_faces++;
+				}
+			}
+		}
 
 	}
 
@@ -269,9 +283,39 @@ public:
 	/*!
 	 * \brief Get the data for a boundary.
 	 */
-	void boundaryDataFunction(std::shared_ptr<void> user_data,
+	void boundaryDataFunction(std::shared_ptr<void> user_data, const std::string& boundary_name,
 			DataTransferKit::View<DataTransferKit::LocalOrdinal> boundary_cells,
 			DataTransferKit::View<unsigned> cell_faces_on_boundary) {
+
+		int counter = 0;
+		auto boundaryInfo = manager->getMesh()->get_boundary_info();
+		auto boundaryId = boundaryInfo.get_id_by_name(boundary_name);
+
+		LibmeshAdapter::ElemPredicateFunction localPredicate =
+						[=]( LibmeshAdapter::LibmeshEntity<libMesh::Elem> e) {return e.ownerRank() == thisRank;};
+
+
+		// Create the entity iterator over those local cells
+		auto localElemIter = entitySet->entityIterator(localPredicate);
+
+		// Loop over all nodes and set their spatial coordinates
+		unsigned elemCounter = 0;
+		auto startElem = localElemIter.begin();
+		auto endElem = localElemIter.end();
+		for (auto elem = startElem; elem != endElem; ++elem) {
+			auto libmeshElem = Teuchos::rcp_dynamic_cast<
+												LibmeshAdapter::LibmeshEntityExtraData<libMesh::Elem>>(
+												elem->extraData());
+			libMesh::Elem * e = libmeshElem->d_libmesh_geom.get();
+			auto nSides = libmeshElem->d_libmesh_geom->n_sides();
+			for (auto i = 0; i < nSides; i++) {
+				if (boundaryInfo.has_boundary_id(e, i, boundaryId)) {
+					boundary_cells[counter] = elem->id();
+					cell_faces_on_boundary[counter] = i;
+					counter++;
+				}
+			}
+		}
 
 	}
 

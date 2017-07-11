@@ -213,6 +213,10 @@ public:
 	}
 	//@}
 
+	Teuchos::RCP<libMesh::MeshBase> getMesh() {
+		return d_mesh;
+	}
+
 private:
 	// Build the function space.
 //    template<typename LibmeshGeom>

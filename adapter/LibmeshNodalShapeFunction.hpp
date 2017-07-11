@@ -145,8 +145,8 @@ void LibmeshNodalShapeFunction::entitySupportIds(
 	int num_nodes = elem->n_nodes();
 	support_ids.resize(num_nodes);
 	for (int n = 0; n < num_nodes; ++n) {
-		DTK_CHECK(elem->get_node(n)->valid_id());
-		support_ids[n] = elem->get_node(n)->id();
+		DTK_CHECK(elem->node_ref(n).valid_id());
+		support_ids[n] = elem->node_ref(n).id();
 	}
 }
 
